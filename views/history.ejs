@@ -1,0 +1,168 @@
+<%- include('partials/header') %>
+
+<% 
+  const notes = {
+    objective: "Analyze AJAX requests in the Burp Suite HTTP History tab to track background communications and discover a flag returned inside a POST response.",
+    workflow: [
+      "Open Burp Suite. Go to the Proxy > HTTP history tab.",
+      "Browse to this HTTP History Lab page in the proxy browser.",
+      "Look at the History log. You will see initial GET requests, CSS assets, and images.",
+      "Type a search term in the 'Product Search' box (e.g., 'headphones'). Notice the live results fetch query in the background.",
+      "Locate the 'Profile Bio' textarea. Write a message and click 'Save Bio'.",
+      "Return to Burp Suite, inspect the HTTP history list, and scroll to the bottom.",
+      "Find the POST request to /history/update-bio and select it.",
+      "Go to the Response tab. In the JSON body payload, read the secret flag: FLAG{HTTP_HISTORY_BIO_SAVED}."
+    ],
+    whatToSay: [
+      "Welcome to the HTTP History Lab. In modern Single Page Apps, clicking around doesn't always trigger a full page refresh.",
+      "Behind the scenes, Javascript uses Fetch/XHR to query APIs. Regular users don't see this, but Burp HTTP History logs EVERY request.",
+      "Let's interact with our profile page. By searching and saving our bio, we fire background requests.",
+      "When we inspect the history, we can analyze the headers, body, and server responses for each action.",
+      "Look at the response from saving our bio: the API returned JSON containing our successful completion flag!"
+    ],
+    mistakes: [
+      "Looking only at full browser refreshes and missing background AJAX pings.",
+      "Applying strict filters in Burp history (like hiding JS or CSS) and accidentally hiding API calls.",
+      "Forgetting to check the Response sub-tab in Burp when inspecting historical logs."
+    ],
+    concepts: [
+      "HTTP History Logging",
+      "AJAX/Fetch Inspections",
+      "API Response Analysis",
+      "Static Asset Tracking"
+    ]
+  };
+%>
+
+<div class="lab-layout">
+  
+  <!-- Left Workspace -->
+  <div class="lab-workspace">
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <h2 style="font-size: 1.5rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">Lab 3: Track Requests</h2>
+      <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1rem;">
+        Discover how Burp Suite logs all traffic (including background queries, API calls, and assets) in the HTTP History tab.
+      </p>
+
+      <div class="alert-box alert-info">
+        <strong>Mission:</strong> Interact with the dashboard search and profile updates. Inspect the background traffic inside Burp Proxy's HTTP History to retrieve the flag.
+      </div>
+
+      <!-- Profile & Search Sandbox -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem; flex-wrap: wrap;">
+        
+        <!-- Live Search Card -->
+        <div class="card" style="background: var(--bg-darker);">
+          <h3 style="font-size: 1.1rem; color: var(--accent-cyan); margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+            🔍 Live Search Telemetry
+          </h3>
+          <div class="form-group">
+            <label class="form-label">Search Products</label>
+            <input type="text" id="liveSearchInput" class="form-input" placeholder="Type to search (e.g. laptop)..." oninput="triggerSearch()">
+          </div>
+          <div id="searchResults" style="font-size: 0.85rem; color: var(--text-muted); min-height: 80px; padding: 0.5rem; border: 1px dashed var(--border-color); border-radius: 6px; background: rgba(0,0,0,0.2);">
+            Search results will load here dynamically...
+          </div>
+        </div>
+
+        <!-- User Profile Card -->
+        <div class="card" style="background: var(--bg-darker);">
+          <h3 style="font-size: 1.1rem; color: var(--accent-purple); margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+            👤 User Bio Editor
+          </h3>
+          
+          <!-- Loading mock images to trigger history logs -->
+          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+            <img src="/images/avatar.png" alt="Profile" style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--border-color); background: #131a26;">
+            <div>
+              <span style="font-weight: 600; display: block;">security_analyst_01</span>
+              <span class="badge badge-cyan" style="font-size: 0.65rem;">Staff Member</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Profile Bio</label>
+            <textarea id="bioInput" class="form-textarea" placeholder="Update your professional biography here..."></textarea>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="saveBio()">Save Bio</button>
+          
+          <div id="bioStatus" style="font-size: 0.85rem; margin-top: 0.5rem; color: var(--accent-green);"></div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Hints Section -->
+    <div class="hint-accordion">
+      <button class="hint-trigger">
+        <span>💡 Need a hint?</span>
+        <span class="hint-icon">▼</span>
+      </button>
+      <div class="hint-content">
+        <p>1. Type something in the Search box, and write a bio and save it.</p>
+        <p style="margin-top: 0.5rem;">2. Open Burp Suite, select **Proxy** then **HTTP history**.</p>
+        <p style="margin-top: 0.5rem;">3. Find the line showing a **POST** request to <code>/history/update-bio</code>.</p>
+        <p style="margin-top: 0.5rem;">4. Click on that request, then look at the **Response** block in Burp. The flag is stored inside the JSON response block.</p>
+      </div>
+    </div>
+
+    <!-- Flag Submission -->
+    <%- include('partials/flag_submission', { lab: 'history' }) %>
+  </div>
+
+  <!-- Right YouTube Guide -->
+  <%- include('partials/youtube_drawer', { notes: notes }) %>
+
+</div>
+
+<!-- Client Scripts for dynamic interaction -->
+<script>
+  async function triggerSearch() {
+    const q = document.getElementById('liveSearchInput').value;
+    const resultsDiv = document.getElementById('searchResults');
+    if (!q) {
+      resultsDiv.innerHTML = "Type to search...";
+      return;
+    }
+    
+    try {
+      const res = await fetch(`/history/search?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      resultsDiv.innerHTML = `
+        <div style="color: var(--accent-cyan); font-weight: bold; margin-bottom: 0.25rem;">API query executed successfully:</div>
+        <ul>
+          ${data.results.map(r => `<li>${r.title}</li>`).join('')}
+        </ul>
+        <span style="font-size: 0.75rem; color: var(--text-dark);">Timestamp: ${data.timestamp}</span>
+      `;
+    } catch(e) {
+      resultsDiv.innerHTML = "Error fetching search results.";
+    }
+  }
+
+  async function saveBio() {
+    const bioText = document.getElementById('bioInput').value;
+    const statusDiv = document.getElementById('bioStatus');
+    statusDiv.style.color = 'var(--text-main)';
+    statusDiv.textContent = "Saving bio...";
+
+    try {
+      const res = await fetch('/history/update-bio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bio: bioText })
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        statusDiv.style.color = 'var(--accent-green)';
+        statusDiv.textContent = "Bio saved successfully (Logged in background)!";
+      }
+    } catch(e) {
+      statusDiv.style.color = 'var(--accent-red)';
+      statusDiv.textContent = "Failed to save bio.";
+    }
+  }
+</script>
+
+<%- include('partials/footer') %>

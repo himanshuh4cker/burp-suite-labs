@@ -1,0 +1,174 @@
+<%- include('partials/header') %>
+
+<% 
+  const notes = {
+    objective: "Translate ciphertexts and tokens using Burp Decoder to reverse Base64, Hex, URL encoding, JWT payloads, and MD5 hashes, and obtain the target flags.",
+    workflow: [
+      "Open Burp Suite and go to the Decoder tab.",
+      "Copy the URL-Encoded string from this page: %46%4C%41%47%7B%55%52%4C%5F%44%65%63%6F%64%65%5F%4F%4B%7D.",
+      "Paste it into the top panel of Burp Decoder. On the right side, click 'Decode as...' > 'URL'.",
+      "Notice the decoded text in the lower window: FLAG{URL_Decode_OK}. Paste it in the validation box on this page.",
+      "Copy the Base64 string: YnVyZl9zdWl0ZV9pc19hd2Vzb21l. Select 'Decode as...' > 'Base64' to get: burp_suite_is_awesome.",
+      "Copy the Hex string: 464c41477b4865785f4465636f64655f46756e7d. Select 'Decode as...' > 'ASCII Hex' to get: FLAG{Hex_Decode_Fun}.",
+      "Copy the JWT Token. Paste it into Decoder. Highlight the middle section (the payload) and decode as Base64. Observe the JSON claim: FLAG{JWT_DECODED_SECRET}.",
+      "Copy the MD5 hash: 21232f297a57a5a743894a0e4a801fc3. Burp Decoder does not crack hashes directly, but it can hash strings. Use an online tool or crack it to find 'admin'!"
+    ],
+    whatToSay: [
+      "Welcome to the Decoder Lab! Burp Decoder is a quick-access utility for transforming data formats.",
+      "Web applications encode data in various ways to pass it over HTTP safely. For example, URL encoding escapes special characters like curly brackets, and Base64 converts binary to text.",
+      "As security auditors, we often find base64 cookies or URL-encoded paths. Burp Decoder lets you chain transformations easily (e.g. Decode Base64, then Decode URL).",
+      "Let's copy these tokens one by one and decode them. Understanding how hashes and JWT structures behave is crucial for pentesting."
+    ],
+    mistakes: [
+      "Confusing MD5 hashes with encryption. Hashes are one-way functions: you crack them using databases or wordlists, you don't 'decode' them.",
+      "Accidentally copying trailing spaces or quotes when copying the JWT token, which breaks the Base64 decoding parser.",
+      "Decoding a full JWT token as Base64 directly: you must split the JWT by its dots and decode the header (first part) or payload (second part) individually!"
+    ],
+    concepts: [
+      "Burp Decoder Interface",
+      "Data Formats & Encoding Schemes",
+      "JWT Structure Splitting",
+      "One-way Hashing vs. Encoding"
+    ]
+  };
+%>
+
+<div class="lab-layout">
+  
+  <!-- Left Workspace -->
+  <div class="lab-workspace">
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <h2 style="font-size: 1.5rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">Lab 7: Decode Everything</h2>
+      <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1rem;">
+        Practice using Burp Decoder to quickly convert common web coding formats, token formats, and hashes into plaintext.
+      </p>
+
+      <div class="alert-box alert-info">
+        <strong>Mission:</strong> Decode the five challenges using Burp Decoder. Verify your inputs in the validator below, then submit the main URL Decode flag <code>FLAG{URL_Decode_OK}</code>.
+      </div>
+
+      <!-- Decode Exercises List -->
+      <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem;">
+        
+        <!-- Challenge 1: Base64 -->
+        <div class="card" style="background: var(--bg-darker); padding: 1rem;">
+          <h4 style="color: var(--accent-purple); font-size: 0.95rem; margin-bottom: 0.5rem;">Challenge 1: Base64 Encoding</h4>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; background: rgba(0,0,0,0.3); padding: 0.5rem; border-radius: 4px;">
+            <code style="color: #ffffff;">YnVycF9zdWl0ZV9pc19hd2Vzb21l</code>
+            <button class="btn btn-secondary btn-sm" onclick="copyText('YnVycF9zdWl0ZV9pc19hd2Vzb21l')">Copy</button>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <input type="text" id="chk1" class="form-input form-input-sm" placeholder="Enter decoded text..." style="font-size: 0.85rem; padding: 0.4rem;">
+            <button class="btn btn-secondary btn-sm" onclick="verifyDec(1, 'burp_suite_is_awesome')">Check</button>
+          </div>
+          <div id="res1" style="font-size: 0.8rem; margin-top: 0.25rem;"></div>
+        </div>
+
+        <!-- Challenge 2: URL Encode -->
+        <div class="card" style="background: var(--bg-darker); padding: 1rem;">
+          <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 0.5rem;">Challenge 2: URL Encoded Flag</h4>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; background: rgba(0,0,0,0.3); padding: 0.5rem; border-radius: 4px;">
+            <code style="color: #ffffff;">%46%4C%41%47%7B%55%52%4C%5F%44%65%63%6F%64%65%5F%4F%4B%7D</code>
+            <button class="btn btn-secondary btn-sm" onclick="copyText('%46%4C%41%47%7B%55%52%4C%5F%44%65%63%6F%64%65%5F%4F%4B%7D')">Copy</button>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <input type="text" id="chk2" class="form-input form-input-sm" placeholder="Enter decoded text..." style="font-size: 0.85rem; padding: 0.4rem;">
+            <button class="btn btn-secondary btn-sm" onclick="verifyDec(2, 'FLAG{URL_Decode_OK}')">Check</button>
+          </div>
+          <div id="res2" style="font-size: 0.8rem; margin-top: 0.25rem;"></div>
+        </div>
+
+        <!-- Challenge 3: Hex -->
+        <div class="card" style="background: var(--bg-darker); padding: 1rem;">
+          <h4 style="color: var(--accent-amber); font-size: 0.95rem; margin-bottom: 0.5rem;">Challenge 3: Hex Formatted String</h4>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; background: rgba(0,0,0,0.3); padding: 0.5rem; border-radius: 4px;">
+            <code style="color: #ffffff;">464c41477b4865785f4465636f64655f46756e7d</code>
+            <button class="btn btn-secondary btn-sm" onclick="copyText('464c41477b4865785f4465636f64655f46756e7d')">Copy</button>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <input type="text" id="chk3" class="form-input form-input-sm" placeholder="Enter decoded text..." style="font-size: 0.85rem; padding: 0.4rem;">
+            <button class="btn btn-secondary btn-sm" onclick="verifyDec(3, 'FLAG{Hex_Decode_Fun}')">Check</button>
+          </div>
+          <div id="res3" style="font-size: 0.8rem; margin-top: 0.25rem;"></div>
+        </div>
+
+        <!-- Challenge 4: JWT Token -->
+        <div class="card" style="background: var(--bg-darker); padding: 1rem;">
+          <h4 style="color: var(--accent-purple); font-size: 0.95rem; margin-bottom: 0.5rem;">Challenge 4: JWT Payload Parsing</h4>
+          <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+            Extract the middle section of the token (separated by periods) and decode the Base64 bytes.
+          </p>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; background: rgba(0,0,0,0.3); padding: 0.5rem; border-radius: 4px; overflow-x: auto;">
+            <code style="color: #ffffff; font-size: 0.7rem; white-space: nowrap;"><%= decoderJWT %></code>
+            <button class="btn btn-secondary btn-sm" onclick="copyText('<%= decoderJWT %>')">Copy</button>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <input type="text" id="chk4" class="form-input form-input-sm" placeholder="Enter secret_flag value..." style="font-size: 0.85rem; padding: 0.4rem;">
+            <button class="btn btn-secondary btn-sm" onclick="verifyDec(4, 'FLAG{JWT_DECODED_SECRET}')">Check</button>
+          </div>
+          <div id="res4" style="font-size: 0.8rem; margin-top: 0.25rem;"></div>
+        </div>
+
+        <!-- Challenge 5: Hash -->
+        <div class="card" style="background: var(--bg-darker); padding: 1rem;">
+          <h4 style="color: var(--accent-cyan); font-size: 0.95rem; margin-bottom: 0.5rem;">Challenge 5: One-way MD5 Hash cracking</h4>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; background: rgba(0,0,0,0.3); padding: 0.5rem; border-radius: 4px;">
+            <code style="color: #ffffff;">21232f297a57a5a743894a0e4a801fc3</code>
+            <button class="btn btn-secondary btn-sm" onclick="copyText('21232f297a57a5a743894a0e4a801fc3')">Copy</button>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <input type="text" id="chk5" class="form-input form-input-sm" placeholder="Enter plaintext word..." style="font-size: 0.85rem; padding: 0.4rem;">
+            <button class="btn btn-secondary btn-sm" onclick="verifyDec(5, 'admin')">Check</button>
+          </div>
+          <div id="res5" style="font-size: 0.8rem; margin-top: 0.25rem;"></div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Hints Section -->
+    <div class="hint-accordion">
+      <button class="hint-trigger">
+        <span>💡 Need a hint?</span>
+        <span class="hint-icon">▼</span>
+      </button>
+      <div class="hint-content">
+        <p>1. <strong>Base64</strong>: Paste into Decoder, decode as Base64 to get: <code>burp_suite_is_awesome</code>.</p>
+        <p style="margin-top: 0.5rem;">2. <strong>URL</strong>: Decode as URL to get: <code>FLAG{URL_Decode_OK}</code>.</p>
+        <p style="margin-top: 0.5rem;">3. <strong>Hex</strong>: Decode as ASCII hex to get: <code>FLAG{Hex_Decode_Fun}</code>.</p>
+        <p style="margin-top: 0.5rem;">4. <strong>JWT</strong>: Split by periods. Copy the middle section (payload), paste into Decoder, decode as Base64, and read the flag: <code>FLAG{JWT_DECODED_SECRET}</code>.</p>
+        <p style="margin-top: 0.5rem;">5. <strong>MD5 Hash</strong>: 21232f297a57a5a743894a0e4a801fc3 is the MD5 signature of the word: <code>admin</code>.</p>
+      </div>
+    </div>
+
+    <!-- Flag Submission -->
+    <%- include('partials/flag_submission', { lab: 'decoder' }) %>
+  </div>
+
+  <!-- Right YouTube Guide -->
+  <%- include('partials/youtube_drawer', { notes: notes }) %>
+
+</div>
+
+<!-- Helper script for decoding client validations -->
+<script>
+  function copyText(str) {
+    navigator.clipboard.writeText(str);
+    alert("Copied to clipboard!");
+  }
+
+  function verifyDec(idx, expected) {
+    const val = document.getElementById('chk' + idx).value.trim();
+    const res = document.getElementById('res' + idx);
+    if (val.toLowerCase() === expected.toLowerCase()) {
+      res.style.color = 'var(--accent-green)';
+      res.textContent = "✓ Correct plaintext!";
+    } else {
+      res.style.color = 'var(--accent-red)';
+      res.textContent = "✗ Mismatch. Try again.";
+    }
+  }
+</script>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Burp Suite Training Lab - <%= title %></title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22 width=%22100%22 height=%22100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
+</head>
+<body>
+  <header class="app-header">
+    <div class="nav-wrapper">
+      <a href="/" class="logo-link">
+        <span class="logo-text">Burp Lab</span>
+        <span class="badge-logo">Pentest by HP</span>
+      </a>
+
+      <!-- Progress Tracking Bar -->
+      <% 
+        const completed = Object.values(progress).filter(Boolean).length;
+        const total = Object.keys(progress).length;
+        const pct = Math.round((completed / total) * 100);
+      %>
+      <div style="display: flex; align-items: center; gap: 1rem; flex: 1; max-width: 400px; margin: 0 2rem;">
+        <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: bold; white-space: nowrap;">
+          PROGRESS: <%= completed %>/<%= total %>
+        </span>
+        <div style="background: var(--bg-darker); border: 1px solid var(--border-color); height: 8px; border-radius: 4px; flex: 1; overflow: hidden; position: relative;">
+          <div style="background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple)); width: <%= pct %>%; height: 100%; transition: width 0.3s; box-shadow: 0 0 8px var(--accent-cyan-glow);"></div>
+        </div>
+        <span style="font-size: 0.8rem; color: var(--accent-cyan); font-weight: bold;"><%= pct %>%</span>
+      </div>
+
+      <div class="header-actions">
+        <button id="globalResetBtn" class="btn btn-secondary btn-sm btn-danger" onclick="resetAllLabs()">
+          Reset Progress
+        </button>
+        <a href="/" class="btn btn-primary btn-sm">Dashboard</a>
+      </div>
+    </div>
+  </header>
+
+  <script>
+    async function resetAllLabs() {
+      if (confirm('Are you sure you want to reset all lab progress? This will clear all completed flags.')) {
+        try {
+          const res = await fetch('/api/reset', { method: 'POST' });
+          const data = await res.json();
+          if (data.success) {
+            alert(data.message);
+            window.location.reload();
+          }
+        } catch (e) {
+          alert('Failed to reset labs.');
+        }
+      }
+    }
+  </script>
+
+  <main class="container">

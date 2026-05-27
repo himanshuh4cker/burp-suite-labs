@@ -1,0 +1,56 @@
+<aside class="youtube-drawer" id="youtubeDrawer">
+  <div class="drawer-header">
+    <div class="drawer-title" id="drawerTitle">
+      <span style="font-size: 1.25rem;">📖</span>
+      <span style="font-weight: 700; letter-spacing: 0.5px;">LAB WALKTHROUGH</span>
+    </div>
+    <button class="drawer-toggle" onclick="toggleDrawer()" id="drawerToggleBtn" title="Collapse Walkthrough">➡️</button>
+  </div>
+  <div class="drawer-body" id="drawerBody">
+    <div class="notes-section">
+      <h4>🎯 Core Objective</h4>
+      <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 0.5rem;">
+        <%= notes.objective %>
+      </p>
+    </div>
+    
+    <div class="notes-section">
+      <h4>🛠️ How to Solve (Burp Suite Workflow)</h4>
+      <ul style="margin-left: 1rem; list-style-type: square;">
+        <% notes.workflow.forEach(function(item) { %>
+          <li style="margin-bottom: 0.4rem; font-size: 0.85rem; line-height: 1.4;"><%= item %></li>
+        <% }); %>
+      </ul>
+    </div>
+
+    <div class="notes-section">
+      <h4>💡 Concepts Taught</h4>
+      <ul style="margin-left: 1rem; list-style-type: disc;">
+        <% notes.concepts.forEach(function(item) { %>
+          <li style="margin-bottom: 0.4rem;"><span class="badge badge-cyan" style="padding: 0.1rem 0.4rem; font-size: 0.65rem;"><%= item %></span></li>
+        <% }); %>
+      </ul>
+    </div>
+  </div>
+</aside>
+
+<script>
+  function toggleDrawer() {
+    const drawer = document.getElementById('youtubeDrawer');
+    const toggleBtn = document.getElementById('drawerToggleBtn');
+    const drawerTitle = document.getElementById('drawerTitle');
+    const drawerBody = document.getElementById('drawerBody');
+    
+    drawer.classList.toggle('collapsed');
+    
+    if (drawer.classList.contains('collapsed')) {
+      toggleBtn.textContent = '⬅️';
+      toggleBtn.title = "Expand Walkthrough";
+      drawerTitle.style.display = 'none';
+    } else {
+      toggleBtn.textContent = '➡️';
+      toggleBtn.title = "Collapse Walkthrough";
+      drawerTitle.style.display = 'flex';
+    }
+  }
+</script>

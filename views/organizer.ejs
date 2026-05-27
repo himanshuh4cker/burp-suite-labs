@@ -1,0 +1,140 @@
+<%- include('partials/header') %>
+
+<% 
+  const notes = {
+    objective: "Utilize the Burp Suite Organizer tab to store, tag, categorize, and document interesting HTTP requests found during testing.",
+    workflow: [
+      "Navigate to this Organizer Lab page in your browser.",
+      "Open Burp Suite and go to Proxy > HTTP history.",
+      "Click the three buttons on this page: 'Trigger Diagnostics', 'Trigger Staff Auth Log', and 'Trigger Developer Secrets Config'.",
+      "Find these three background API requests in your Burp history:",
+      "  - GET /api/admin/system-diagnostics",
+      "  - POST /api/auth/login",
+      "  - GET /api/debug/config",
+      "For each request: right-click it and select 'Send to Organizer'.",
+      "Navigate to the Organizer tab in Burp. You will see your saved requests listed.",
+      "Highlight the POST /api/auth/login request. In the Notes panel on the right, type: 'Contains static API key KEY_77492_SECRET_RESTRICTED'. Double-click the 'Notes' or 'Rating' fields to assign labels.",
+      "Double-click the 'Comment' or 'Tags' field in Organizer and label it as 'Staging Creds'.",
+      "Repeat the organization for the GET /api/debug/config request (which contains the flag: FLAG{ORGANIZER_KEYS_SAVED}). Label it as 'Config Disclosure'.",
+      "Pasting the flag into the submission form resolves the lab!"
+    ],
+    whatToSay: [
+      "Welcome to the Organizer Lab! During a large penetration test, you might intercept thousands of requests.",
+      "Keeping track of backdoor links, SQL injection inputs, or hardcoded tokens in notepad is chaotic.",
+      "Burp Organizer is a neat central repository where you can save key requests, rate them by severity, add notes, and tag them for reference.",
+      "By triggering diagnostics and configurations, we generate historical traces. Organizing these ensures we have notes ready for reporting!"
+    ],
+    mistakes: [
+      "Confusing Organizer with Repeater. Repeater is for actively replaying requests. Organizer is a read-only notebook for categorizing important findings.",
+      "Forgetting to add descriptive notes or ratings in Organizer, making the tab look like a duplicate HTTP History list."
+    ],
+    concepts: [
+      "Burp Organizer Utility",
+      "PENTEST Evidence Management",
+      "Tagging and Labeling Assets",
+      "API Credentials Identification"
+    ]
+  };
+%>
+
+<div class="lab-layout">
+  
+  <!-- Left Workspace -->
+  <div class="lab-workspace">
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <h2 style="font-size: 1.5rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">Lab 10: Save Interesting Requests</h2>
+      <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1rem;">
+        Learn how to use Burp Organizer as a central notebook to store, rate, tag, and document vulnerable endpoints during audits.
+      </p>
+
+      <div class="alert-box alert-info">
+        <strong>Mission:</strong> Trigger the diagnostics, authentication, and secret configuration API queries below. Send these requests to Organizer, categorize them, and submit the config flag <code>FLAG{ORGANIZER_KEYS_SAVED}</code>.
+      </div>
+
+      <!-- Debug Dashboard Panel -->
+      <div class="card" style="background: var(--bg-darker); margin-top: 1.5rem;">
+        <h3 style="font-size: 1.1rem; color: var(--accent-cyan); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1rem;">
+          ⚙️ Developer System Dashboard Console
+        </h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+          Click the buttons below to fire various developer API endpoints in the background. Burp will record them in the history.
+        </p>
+
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+          <button class="btn btn-secondary btn-sm" onclick="triggerApi('diagnostics', '/api/admin/system-diagnostics')">
+            📊 Trigger Diagnostics
+          </button>
+          
+          <button class="btn btn-secondary btn-sm" onclick="triggerPostApi('login', '/api/auth/login')">
+            🔑 Trigger Staff Auth Log
+          </button>
+
+          <button class="btn btn-secondary btn-sm" onclick="triggerApi('config', '/api/debug/config')">
+            ⚙️ Trigger Developer Secrets Config
+          </button>
+        </div>
+
+        <!-- Local Console Window -->
+        <div class="http-inspector" style="margin-top: 1.5rem;">
+          <div class="inspector-title">Active Diagnostics / Output:</div>
+          <pre id="apiConsoleOutput" style="padding: 0.75rem; font-size: 0.75rem; color: var(--text-muted); max-height: 150px; overflow-y: auto;">Console awaiting triggers...</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hints Section -->
+    <div class="hint-accordion">
+      <button class="hint-trigger">
+        <span>💡 Need a hint?</span>
+        <span class="hint-icon">▼</span>
+      </button>
+      <div class="hint-content">
+        <p>1. Open Burp. Click **Trigger Developer Secrets Config** on this page.</p>
+        <p style="margin-top: 0.5rem;">2. Go to **Proxy > HTTP history**, select the GET request to <code>/api/debug/config</code>, right-click and choose **Send to Organizer**.</p>
+        <p style="margin-top: 0.5rem;">3. In Organizer, view the request and copy the flag: <code>FLAG{ORGANIZER_KEYS_SAVED}</code>.</p>
+      </div>
+    </div>
+
+    <!-- Flag Submission -->
+    <%- include('partials/flag_submission', { lab: 'organizer' }) %>
+  </div>
+
+  <!-- Right YouTube Guide -->
+  <%- include('partials/youtube_drawer', { notes: notes }) %>
+
+</div>
+
+<!-- Client scripts -->
+<script>
+  async function triggerApi(type, url) {
+    const consoleEl = document.getElementById('apiConsoleOutput');
+    consoleEl.textContent = `Running GET request to ${url}...`;
+    
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      consoleEl.textContent = `HTTP/1.1 200 OK\nContent-Type: application/json\n\n${JSON.stringify(data, null, 2)}`;
+    } catch(e) {
+      consoleEl.textContent = "Error executing API request.";
+    }
+  }
+
+  async function triggerPostApi(type, url) {
+    const consoleEl = document.getElementById('apiConsoleOutput');
+    consoleEl.textContent = `Running POST request to ${url}...`;
+    
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user: "maintenance", secret: "console_override" })
+      });
+      const data = await res.json();
+      consoleEl.textContent = `HTTP/1.1 200 OK\nResponse Headers:\n  X-Security-Header: ${res.headers.get('X-Security-Header')}\n\n${JSON.stringify(data, null, 2)}`;
+    } catch(e) {
+      consoleEl.textContent = "Error executing API request.";
+    }
+  }
+</script>
+
+<%- include('partials/footer') %>

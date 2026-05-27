@@ -1,0 +1,156 @@
+<%- include('partials/header') %>
+
+<% 
+  const notes = {
+    objective: "Intercept a login attempt and modify the request headers, cookies, or body parameters in Burp Suite Proxy to authenticate as an admin.",
+    workflow: [
+      "Open Burp Suite. Go to Proxy > Intercept and ensure 'Intercept is on'.",
+      "Using Burp's embedded browser (or your proxy-configured browser), visit this Proxy Lab page.",
+      "Enter username 'guest' and password 'guest123', then click 'Login'.",
+      "Look at Burp Suite's Intercept screen. You will see the POST request to /proxy/submit.",
+      "Modify the request. You can solve this in 3 different ways:",
+      "Method 1: Change 'username=guest' to 'username=admin' and 'password=guest123' to 'password=admin_override' in the post body.",
+      "Method 2: Add a new HTTP header line: 'X-Admin-Bypass: true'.",
+      "Method 3: Modify or add a Cookie header: 'Cookie: admin_session=true'.",
+      "Click 'Forward' in Burp Suite to send the modified request to the server.",
+      "Check your browser: the page will load and reveal the flag!"
+    ],
+    whatToSay: [
+      "Welcome to the Proxy Intercept Lab! The Proxy is the heart of Burp Suite. It sits between your browser and the target server.",
+      "When we submit this form, the browser sends an HTTP POST request. By turning Intercept on, we catch this request in mid-air.",
+      "As a penetration tester, this allows us to bypass client-side restrictions, tamper with parameters, inject custom headers, and test how the server handles unexpected data.",
+      "Here, the server has a backdoor: it checks for admin credentials, a bypass header, or an admin session cookie. Let's modify the request to unlock admin access!"
+    ],
+    mistakes: [
+      "Forgetting to turn Intercept OFF after the lab, making the browser seem frozen or stuck loading.",
+      "Misspelling headers or cookie values (e.g. 'X-Admin-Bypass' must be spelled exactly and have the value 'true').",
+      "Adding custom headers in the middle of other header lines instead of on a new line."
+    ],
+    concepts: [
+      "Burp Proxy Interception",
+      "Request Tampering",
+      "HTTP Header Injection",
+      "Cookie Manipulation"
+    ]
+  };
+%>
+
+<div class="lab-layout">
+  
+  <!-- Left Workspace -->
+  <div class="lab-workspace">
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <h2 style="font-size: 1.5rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">Lab 1: Intercept Requests</h2>
+      <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1rem;">
+        Explore how Burp Suite acts as an inline proxy to capture and manipulate HTTP requests before they reach the server.
+      </p>
+
+      <div class="alert-box alert-info">
+        <strong>Mission:</strong> Authenticate as an admin by intercepting the login request. You can tamper with the username/password body parameters, add a custom header <code>X-Admin-Bypass: true</code>, or inject a cookie <code>admin_session=true</code>.
+      </div>
+
+      <!-- Vulnerable Login Form -->
+      <div class="card" style="max-width: 500px; margin: 1.5rem auto; background: var(--bg-darker);">
+        <h3 style="font-size: 1.1rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; color: var(--accent-purple);">
+          🔐 Staff Portal Login
+        </h3>
+        
+        <form action="/proxy/submit" method="POST">
+          <div class="form-group">
+            <label class="form-label" for="username">Username</label>
+            <input type="text" id="username" name="username" class="form-input" value="guest" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="password">Password</label>
+            <input type="password" id="password" name="password" class="form-input" value="guest123" required>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%;">
+            Login
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Visual Feedback: Server Response Details -->
+    <% if (submission) { %>
+      <div class="card" style="margin-bottom: 1.5rem; border-color: <%= flagFound ? 'var(--accent-green)' : 'var(--accent-red)' %>;">
+        <h3 style="font-size: 1.2rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between;">
+          <span>🖥️ Server Receipt Analysis</span>
+          <span class="badge <%= flagFound ? 'badge-green' : 'badge-red' %>">
+            <%= flagFound ? 'AUTHENTICATED' : 'ACCESS DENIED' %>
+          </span>
+        </h3>
+
+        <div class="alert-box <%= flagFound ? 'alert-success' : 'alert-warning' %>">
+          <%= resultMessage %>
+        </div>
+
+        <h4 style="font-size: 0.95rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">Raw HTTP Request Elements Received by Server:</h4>
+        
+        <div class="http-inspector">
+          <div class="inspector-title">
+            <span>HTTP/1.1 POST /proxy/submit</span>
+            <span style="color: var(--text-dark);">LOGGED DETAILS</span>
+          </div>
+          <div class="inspector-body">
+            <table class="http-headers-table">
+              <thead>
+                <tr>
+                  <th>Component</th>
+                  <th>Key / Name</th>
+                  <th>Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="color: var(--accent-amber);">POST Body</td>
+                  <td class="header-name">username</td>
+                  <td class="header-value"><code><%= submission.body.username %></code></td>
+                </tr>
+                <tr>
+                  <td style="color: var(--accent-amber);">POST Body</td>
+                  <td class="header-name">password</td>
+                  <td class="header-value"><code><%= submission.body.password %></code></td>
+                </tr>
+                <tr>
+                  <td style="color: var(--accent-purple);">Cookies</td>
+                  <td class="header-name">Cookie Header</td>
+                  <td class="header-value"><code><%= submission.cookies %></code></td>
+                </tr>
+                <% Object.keys(submission.headers).forEach(function(headerName) { %>
+                  <tr>
+                    <td>Header</td>
+                    <td class="header-name"><%= headerName %></td>
+                    <td class="header-value"><%= submission.headers[headerName] %></td>
+                  </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    <% } %>
+
+    <!-- Hints Section -->
+    <div class="hint-accordion">
+      <button class="hint-trigger">
+        <span>💡 Need a hint?</span>
+        <span class="hint-icon">▼</span>
+      </button>
+      <div class="hint-content">
+        <p>1. Open Burp Suite, turn on Intercept, and submit the login form. The browser will wait.</p>
+        <p style="margin-top: 0.5rem;">2. In Burp, locate the text block <code>username=guest&password=guest123</code> at the very bottom of the request. Change it to <code>username=admin&password=admin_override</code>.</p>
+        <p style="margin-top: 0.5rem;">3. Click <strong>Forward</strong>. The browser will load the success screen and display the flag <code>FLAG{PROXY_INTERCEPT_OK}</code>.</p>
+      </div>
+    </div>
+
+    <!-- Flag Submission -->
+    <%- include('partials/flag_submission', { lab: 'proxy' }) %>
+  </div>
+
+  <!-- Right YouTube Guide -->
+  <%- include('partials/youtube_drawer', { notes: notes }) %>
+
+</div>
+
+<%- include('partials/footer') %>

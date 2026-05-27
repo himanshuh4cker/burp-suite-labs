@@ -1,0 +1,29 @@
+  </main>
+
+  <footer style="margin-top: 5rem; padding: 2rem 0; border-top: 1px solid var(--border-color); background: var(--bg-darker); text-align: center;">
+    <div class="container">
+      <p style="font-size: 0.85rem; color: var(--text-muted);">
+        Burp Suite Community Edition Training Labs • Designed for localhost educational practice only.
+      </p>
+      <p style="font-size: 0.8rem; color: var(--text-dark); margin-top: 0.5rem;">
+        Developed by Antigravity AI • Running Node.js &amp; SQLite.
+      </p>
+    </div>
+  </footer>
+
+  <!-- Accordion Hint Toggle Handler -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const triggers = document.querySelectorAll('.hint-trigger');
+      triggers.forEach(trigger => {
+        trigger.addEventListener('click', () => {
+          const content = trigger.nextElementSibling;
+          content.classList.toggle('show');
+          const isVisible = content.classList.contains('show');
+          trigger.querySelector('.hint-icon').textContent = isVisible ? '▲' : '▼';
+        });
+      });
+    });
+  </script>
+</body>
+</html>

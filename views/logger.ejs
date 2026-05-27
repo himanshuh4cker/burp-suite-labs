@@ -1,0 +1,217 @@
+<%- include('partials/header') %>
+
+<% 
+  const notes = {
+    objective: "Utilize Burp Logger to sort, filter, search, and monitor a high-volume stream of background traffic to isolate a single request containing the secret flag.",
+    workflow: [
+      "Open Burp Suite and navigate to the Logger tab.",
+      "Browse to this Logger Lab page. You will notice the 'Telemetry Console Monitor' on the page starts scrolling, showing background requests running continuously.",
+      "In Burp Logger, look at the flood of incoming rows (telemetry, pings, status, health logs).",
+      "Click the 'Send Debug Report' button on this page. This triggers a single request to /api/admin/debug-flag with a secret header 'X-Debug-Key: teach-burp'.",
+      "In Burp Logger, click on the filter bar at the top of the log tree.",
+      "In the search text field, type: '/api/admin' or search for 'teach-burp' or filter for responses containing 'FLAG{'.",
+      "Press enter to apply the filter. Double-click the isolated request to inspect it.",
+      "Look at the response body to copy the flag: FLAG{LOGGER_SECRET}."
+    ],
+    whatToSay: [
+      "Welcome to the Logger Lab! When pentesting, modern web apps trigger constant background pings, analytics, advertisements, and web socket frames.",
+      "Burp's HTTP History is great, but Burp Logger is a more powerful real-time monitoring and debugging console.",
+      "It allows you to filter logs by status codes, methods, hosts, and query string patterns in real-time.",
+      "Here, we generate high telemetry noise. By clicking 'Send Debug Report', we inject our needle in the haystack.",
+      "Using the Logger filter toolbar, we easily search for the debug path, bypass the noise, and extract our flag!"
+    ],
+    mistakes: [
+      "Trying to scroll through hundreds of telemetry rows manually to find the debug flag. Always use the search and filter tools to find it!",
+      "Forgetting to click the 'Send Debug Report' button first. If you don't trigger the event, the request won't be in the log stream!"
+    ],
+    concepts: [
+      "Burp Logger Architecture",
+      "Traffic Logging and Filtering",
+      "Filtering Telemetry Noise",
+      "Header Isolation Searches"
+    ]
+  };
+%>
+
+<div class="lab-layout">
+  
+  <!-- Left Workspace -->
+  <div class="lab-workspace">
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <h2 style="font-size: 1.5rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">Lab 11: Traffic Monitoring</h2>
+      <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1rem;">
+        Master the search, query, and filter features of Burp Logger to monitor heavy background requests and identify specific targets.
+      </p>
+
+      <div class="alert-box alert-info">
+        <strong>Mission:</strong> Start the noise generator below. Click "Send Debug Report" to fire the debug event, and search inside Burp Logger to extract the flag.
+      </div>
+
+      <!-- Telemetry Controller Panel -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem; flex-wrap: wrap;">
+        
+        <!-- Controls -->
+        <div class="card" style="background: var(--bg-darker);">
+          <h3 style="font-size: 1.1rem; color: var(--accent-cyan); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1rem;">
+            ⚙️ Telemetry Controls
+          </h3>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+            Telemetry noise generator is active. Use the button below to inject the secret debug request.
+          </p>
+
+          <div style="display: flex; gap: 0.5rem; flex-direction: column;">
+            <button class="btn btn-primary" onclick="triggerDebugRequest()">
+              🚀 Send Debug Report
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="toggleTelemetry()" id="telemetryToggleBtn" style="margin-top: 0.5rem;">
+              Stop Telemetry Noise
+            </button>
+          </div>
+          
+          <div id="debugStatus" style="font-size: 0.85rem; margin-top: 0.75rem; color: var(--accent-green);"></div>
+        </div>
+
+        <!-- Telemetry Logs terminal -->
+        <div class="card" style="background: var(--bg-darker);">
+          <h3 style="font-size: 1.1rem; color: var(--accent-purple); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1rem;">
+            📟 Telemetry Console Monitor
+          </h3>
+          <div class="telemetry-console" id="telemetryConsole">
+            <!-- Logging rows appended dynamically -->
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Hints Section -->
+    <div class="hint-accordion">
+      <button class="hint-trigger">
+        <span>💡 Need a hint?</span>
+        <span class="hint-icon">▼</span>
+      </button>
+      <div class="hint-content">
+        <p>1. Ensure **Proxy > Intercept** is off, then click **Send Debug Report** on this page.</p>
+        <p style="margin-top: 0.5rem;">2. Go to the **Logger** tab in Burp Suite.</p>
+        <p style="margin-top: 0.5rem;">3. Find the search field at the top of Logger and search for <code>debug-flag</code>.</p>
+        <p style="margin-top: 0.5rem;">4. Inspect the response of the matches to find the flag: <code>FLAG{LOGGER_SECRET}</code>.</p>
+      </div>
+    </div>
+
+    <!-- Flag Submission -->
+    <%- include('partials/flag_submission', { lab: 'logger' }) %>
+  </div>
+
+  <!-- Right YouTube Guide -->
+  <%- include('partials/youtube_drawer', { notes: notes }) %>
+
+</div>
+
+<!-- Client scripts to generate massive background traffic noise -->
+<script>
+  let telemetryActive = true;
+  let intervalId;
+  const paths = ['/api/telemetry', '/api/health', '/api/ping', '/api/status'];
+  
+  function toggleTelemetry() {
+    const btn = document.getElementById('telemetryToggleBtn');
+    telemetryActive = !telemetryActive;
+    
+    if (telemetryActive) {
+      btn.textContent = "Stop Telemetry Noise";
+      btn.className = "btn btn-secondary btn-sm";
+      startTelemetry();
+    } else {
+      btn.textContent = "Start Telemetry Noise";
+      btn.className = "btn btn-primary btn-sm";
+      clearInterval(intervalId);
+    }
+  }
+
+  function startTelemetry() {
+    intervalId = setInterval(async () => {
+      const idx = Math.floor(Math.random() * paths.length);
+      const path = paths[idx];
+      const method = Math.random() > 0.3 ? 'GET' : 'POST';
+      const consoleEl = document.getElementById('telemetryConsole');
+      
+      try {
+        const t0 = performance.now();
+        let res;
+        if (method === 'GET') {
+          res = await fetch(path);
+        } else {
+          res = await fetch(path, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ping: true, client_ts: Date.now() })
+          });
+        }
+        const text = await res.text();
+        const latency = Math.round(performance.now() - t0);
+        
+        appendLog(method, path, res.status, latency);
+      } catch(e) {
+        appendLog(method, path, 500, 0);
+      }
+    }, 400);
+  }
+
+  function appendLog(method, path, status, latency) {
+    const consoleEl = document.getElementById('telemetryConsole');
+    const row = document.createElement('div');
+    row.className = "telemetry-row";
+    
+    const timeStr = new Date().toLocaleTimeString();
+    const statusClass = status === 200 ? 'ok' : 'err';
+    
+    row.innerHTML = `
+      <span class="telemetry-time">[${timeStr}]</span>
+      <span class="telemetry-method ${method}">${method}</span>
+      <span class="telemetry-path">${path}</span>
+      <span class="telemetry-status ${statusClass}">${status}</span>
+      <span style="color: var(--text-dark);">${latency}ms</span>
+    `;
+    
+    consoleEl.appendChild(row);
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+
+    // Keep list clean, remove old logs
+    while (consoleEl.children.length > 50) {
+      consoleEl.removeChild(consoleEl.firstChild);
+    }
+  }
+
+  async function triggerDebugRequest() {
+    const statusDiv = document.getElementById('debugStatus');
+    statusDiv.style.color = 'var(--text-main)';
+    statusDiv.textContent = "Sending diagnostic debug report...";
+    
+    try {
+      const res = await fetch('/api/admin/debug-flag', {
+        method: 'GET',
+        headers: {
+          'X-Debug-Key': 'teach-burp'
+        }
+      });
+      const data = await res.json();
+      if (res.status === 200) {
+        statusDiv.style.color = 'var(--accent-green)';
+        statusDiv.textContent = "Report sent! Filter Burp Logger to find the response.";
+        appendLog('GET', '/api/admin/debug-flag', 200, 10);
+      } else {
+        statusDiv.style.color = 'var(--accent-red)';
+        statusDiv.textContent = `Error sending report: Code ${res.status}`;
+      }
+    } catch(e) {
+      statusDiv.style.color = 'var(--accent-red)';
+      statusDiv.textContent = "Connection error.";
+    }
+  }
+
+  // Start telemetry loop
+  document.addEventListener('DOMContentLoaded', startTelemetry);
+</script>
+
+<%- include('partials/footer') %>

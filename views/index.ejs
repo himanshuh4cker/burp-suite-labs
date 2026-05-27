@@ -1,0 +1,94 @@
+<%- include('partials/header') %>
+
+<!-- Dashboard Summary Banner -->
+<div class="stats-banner">
+  <div class="stats-info">
+    <h2>Burp Suite Academy Dashboard</h2>
+    <p>Learn web application penetration testing hands-on by completing mini-labs locally.</p>
+  </div>
+  
+  <div class="progress-metrics">
+    <% 
+      const completed = Object.values(progress).filter(Boolean).length;
+      const total = Object.keys(progress).length;
+    %>
+    <div class="metric-box">
+      <div class="metric-value"><%= completed %>/<%= total %></div>
+      <div class="metric-label">Labs Solved</div>
+    </div>
+    <div class="metric-box" style="border-left: 1px solid var(--border-color); padding-left: 2rem;">
+      <div class="metric-value" style="color: var(--accent-purple); text-shadow: 0 0 10px var(--accent-purple-glow);">
+        <%= Math.round((completed / total) * 100) %>%
+      </div>
+      <div class="metric-label">Total Progress</div>
+    </div>
+  </div>
+</div>
+
+<h2 style="font-size: 1.4rem; border-bottom: 2px solid var(--border-color); padding-bottom: 0.5rem; margin-top: 1rem;">
+  Select a Burp Suite Training Lab
+</h2>
+
+<!-- 11 Cards Grid -->
+<div class="grid-dashboard">
+  <% 
+    const labs = [
+      { key: 'proxy', name: 'Intercept Requests', tab: 'Proxy', difficulty: 'Easy', diffClass: 'dot-green', path: '/proxy', desc: 'Configure Burp Proxy, intercept HTTP requests in real-time, modify parameters, and forward or drop traffic.' },
+      { key: 'target', name: 'Explore the Website', tab: 'Target', difficulty: 'Easy', diffClass: 'dot-green', path: '/target', desc: 'Use Burp Target and Sitemap to explore hidden endpoints, administrative portals, backend files, and JS API routes.' },
+      { key: 'history', name: 'Track Requests', tab: 'HTTP History', difficulty: 'Easy', diffClass: 'dot-green', path: '/history', desc: 'Inspect logged HTTP traffic in Burp HTTP History. Distinguish background AJAX calls, search terms, and image loading.' },
+      { key: 'repeater', name: 'Modify and Replay', tab: 'Repeater', difficulty: 'Easy', diffClass: 'dot-green', path: '/product?id=1', desc: 'Tamper with product parameters manually in Burp Repeater to access restricted records and read administrative notes.' },
+      { key: 'intruder', name: 'Fuzz the Secret', tab: 'Intruder', difficulty: 'Medium', diffClass: 'dot-amber', path: '/intruder', desc: 'Launch automated Intruder Sniper attacks to brute-force pins, enumerate users, and bypass rate limits.' },
+      { key: 'comparer', name: 'Compare Responses', tab: 'Comparer', difficulty: 'Easy', diffClass: 'dot-green', path: '/comparer', desc: 'Use Burp Comparer to perform side-by-side diff checks on JWT authorization blocks and API structures.' },
+      { key: 'decoder', name: 'Decode Everything', tab: 'Decoder', difficulty: 'Easy', diffClass: 'dot-green', path: '/decoder', desc: 'Utilize Burp Decoder to translate Base64 arrays, URL hex symbols, hash checksums, and token payloads.' },
+      { key: 'sequencer', name: 'Weak Session Tokens', tab: 'Sequencer', difficulty: 'Medium', diffClass: 'dot-amber', path: '/sequencer', desc: 'Analyze session token randomness in Burp Sequencer by recording a stream of predictable cookie strings.' },
+      { key: 'organizer', name: 'Save Interesting Requests', tab: 'Organizer', difficulty: 'Easy', diffClass: 'dot-green', path: '/organizer', desc: 'Capture, categorize, and archive critical auth details and debug scripts for structured inspection.' },
+      { key: 'logger', name: 'Traffic Monitoring', tab: 'Logger', difficulty: 'Easy', diffClass: 'dot-green', path: '/logger', desc: 'Sort, search, and filter a high-volume telemetry stream in Burp Logger to find the secret debug header.' },
+      { key: 'collaborator', name: 'Out-of-Band Attacks', tab: 'Collaborator', difficulty: 'Medium', diffClass: 'dot-amber', path: '/collaborator', desc: 'Simulate and visualize Out-of-Band Application Security Testing (OAST) callbacks, mapping DNS lookup alerts.' }
+    ];
+  %>
+
+  <% labs.forEach(function(lab) { %>
+    <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; position: relative;">
+      
+      <!-- Top Section -->
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+          <span class="badge badge-cyan" style="font-size: 0.7rem; text-transform: uppercase;">
+            <%= lab.tab %> Tab
+          </span>
+          <div class="difficulty-indicator">
+            <span class="dot <%= lab.diffClass %>"></span>
+            <%= lab.difficulty %>
+          </div>
+        </div>
+
+        <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+          <%= lab.name %>
+          <% if (progress[lab.key]) { %>
+            <span style="color: var(--accent-green);" title="Lab Completed">✓</span>
+          <% } %>
+        </h3>
+
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.45;">
+          <%= lab.desc %>
+        </p>
+      </div>
+
+      <!-- Action Button -->
+      <div>
+        <% if (progress[lab.key]) { %>
+          <a href="<%= lab.path %>" class="btn btn-secondary btn-sm" style="width: 100%; border-color: var(--accent-green); color: var(--accent-green);">
+            Solved (Review Lab)
+          </a>
+        <% } else { %>
+          <a href="<%= lab.path %>" class="btn btn-primary btn-sm" style="width: 100%;">
+            Start Lab
+          </a>
+        <% } %>
+      </div>
+
+    </div>
+  <% }); %>
+</div>
+
+<%- include('partials/footer') %>

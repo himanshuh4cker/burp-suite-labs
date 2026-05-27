@@ -1,0 +1,219 @@
+<%- include('partials/header') %>
+
+<% 
+  const notes = {
+    objective: "Master Burp Intruder to execute automated Sniper fuzzing attacks across three scenarios: number guessing, PIN cracking, and username enumeration.",
+    workflow: [
+      "SCENARIO 1 (Number Guessing):",
+      "1. Submit a guess of '1' in the guessing form. Find the POST /intruder/guess request in HTTP History.",
+      "2. Send it to Intruder (Ctrl+I). In the Positions tab, notice 'guess=1'. Click 'Clear §' then highlight '1' and click 'Add §'.",
+      "3. Go to Payloads. Set type to 'Numbers'. Set range: 1 to 20, step 1. Click 'Start Attack'.",
+      "4. Look for the response with a different length/status. The number 17 will return the flag: FLAG{INTRUDER_SNIPER_NUMBER}.",
+      "",
+      "SCENARIO 2 (PIN Brute-Force):",
+      "1. Submit a PIN of '0000' in the PIN form. Find the POST /intruder/pin request in HTTP History.",
+      "2. Send to Intruder. Clear default markings. Highlight the value of the 'pin' parameter (e.g., 'pin=0000') and add payload markers: §0000§.",
+      "3. Under Payloads, set type to 'Numbers' from 0 to 500 (or use a file list). Format it to 4 digits (e.g. Min Integer digits: 4).",
+      "4. Run the attack. PIN 0420 will return a 200 OK status instead of 403 Forbidden! The body contains: FLAG{INTRUDER_PIN_CRACKED}.",
+      "",
+      "SCENARIO 3 (Username Enumeration):",
+      "1. Submit a login attempt with username 'test' and password 'password'. Send POST /intruder/login to Intruder.",
+      "2. Highlight the 'username' value: §test§. Keep password as a static dummy.",
+      "3. Go to Payloads, set type to 'Simple List'. Paste a list of common usernames: 'admin', 'user', 'guest', 'maintenance', 'support', 'test'.",
+      "4. Run attack. Sort by response Length. The usernames in the database ('admin', 'guest', 'support', 'maintenance', 'security') return a longer response: 'Error: Password is incorrect for existing user.' vs 'Error: User not found.'."
+    ],
+    whatToSay: [
+      "Welcome to the Intruder Lab. Burp Intruder is a powerful tool for automating custom attacks.",
+      "In Community Edition, it is rate-limited but still highly functional for learning sniper, battering ram, pitchfork, and cluster bomb attacks.",
+      "We will focus on the Sniper attack. It places a single payload in designated positions, one by one.",
+      "In the number guessing game, we fuzz inputs 1-20. The correct guess yields a different response length.",
+      "In the PIN bypass, the server returns 403 Forbidden for incorrect PINs. Bruteforcing reveals 0420 yields 200 OK and gives the flag.",
+      "In the login enumerator, we look at slight differences in response length. If a user exists, the server tells us 'incorrect password' which has more bytes than 'user not found'. This lets us compile a list of valid accounts!"
+    ],
+    mistakes: [
+      "Forgetting to clear the automatic markers that Burp puts on cookies and headers, which messes up the sniper injection.",
+      "Failing to format the PIN generator (e.g., sending '420' instead of '0420' if the server expects exactly 4 digits).",
+      "Forgetting that Burp Community Edition has a built-in delay for Intruder. Keep your dictionaries small (under 100 entries) when practicing!"
+    ],
+    concepts: [
+      "Automated Fuzzing",
+      "Sniper Attack Configurations",
+      "Response Length Analysis",
+      "Username Enumeration Techniques"
+    ]
+  };
+%>
+
+<div class="lab-layout">
+  
+  <!-- Left Workspace -->
+  <div class="lab-workspace">
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <h2 style="font-size: 1.5rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">Lab 5: Fuzz the Secret</h2>
+      <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1rem;">
+        Understand how to use Burp Intruder's Sniper attack to automate parameter fuzzing, brute-forcing, and resource enumeration.
+      </p>
+
+      <!-- SCENARIO 1: Guessing 1-20 -->
+      <div class="card" style="background: var(--bg-darker); margin-bottom: 1.5rem;">
+        <h3 style="font-size: 1.1rem; color: var(--accent-cyan); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1rem;">
+          🎯 Scenario 1: Number Guessing (1–20)
+        </h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+          The server has a secret number stored. Write a Sniper rule to fuzz the <code>guess</code> payload from 1 to 20.
+        </p>
+
+        <form id="guessForm" onsubmit="runGuessSubmit(event)" style="display: flex; gap: 0.5rem; max-width: 400px;">
+          <input type="number" id="guessInput" class="form-input" min="1" max="20" placeholder="Enter guess..." required>
+          <button type="submit" class="btn btn-secondary">Submit</button>
+        </form>
+        <div id="guessResult" style="margin-top: 0.75rem; font-size: 0.9rem; font-weight: 500;"></div>
+      </div>
+
+      <!-- SCENARIO 2: PIN Bruteforce -->
+      <div class="card" style="background: var(--bg-darker); margin-bottom: 1.5rem;">
+        <h3 style="font-size: 1.1rem; color: var(--accent-purple); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1rem;">
+          📟 Scenario 2: PIN Code Brute Force
+        </h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+          Secure vault gate locked. The 4-digit PIN is between 0000 and 0500. Fuzz the <code>pin</code> body parameter. Correct PIN returns 200 OK, wrong PINs return 403 Forbidden.
+        </p>
+
+        <form id="pinForm" onsubmit="runPinSubmit(event)" style="display: flex; gap: 0.5rem; max-width: 400px;">
+          <input type="text" id="pinInput" class="form-input" maxlength="4" placeholder="Enter 4-digit PIN (e.g. 0000)..." required style="font-family: monospace;">
+          <button type="submit" class="btn btn-secondary">Unlock Vault</button>
+        </form>
+        <div id="pinResult" style="margin-top: 0.75rem; font-size: 0.9rem; font-weight: 500;"></div>
+      </div>
+
+      <!-- SCENARIO 3: Username Enumeration -->
+      <div class="card" style="background: var(--bg-darker); margin-bottom: 1.5rem;">
+        <h3 style="font-size: 1.1rem; color: var(--accent-amber); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1rem;">
+          👥 Scenario 3: Username Enumeration & Response Diffs
+        </h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+          Observe response structures. If the account does not exist, the server returns a short message. If it exists but the password fails, it returns a longer message. Fuzz the username to discover valid accounts.
+        </p>
+
+        <form id="loginForm" onsubmit="runLoginSubmit(event)" style="max-width: 450px;">
+          <div class="form-group">
+            <label class="form-label">Username</label>
+            <input type="text" id="loginUsername" class="form-input" placeholder="Enter username..." required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" id="loginPassword" class="form-input" placeholder="Enter password..." value="wrongpassword123" required>
+          </div>
+          <button type="submit" class="btn btn-secondary" style="width: 100%;">Attempt Login</button>
+        </form>
+        <div id="loginResult" style="margin-top: 0.75rem; font-size: 0.9rem; font-family: monospace; padding: 0.5rem; background: rgba(0,0,0,0.2); border-radius: 4px; display: none;"></div>
+      </div>
+
+    </div>
+
+    <!-- Hints Section -->
+    <div class="hint-accordion">
+      <button class="hint-trigger">
+        <span>💡 Need a hint?</span>
+        <span class="hint-icon">▼</span>
+      </button>
+      <div class="hint-content">
+        <p><strong>Scenario 1:</strong> Fuzz number range 1 to 20. Number 17 is correct.</p>
+        <p style="margin-top: 0.5rem;"><strong>Scenario 2:</strong> Set payload to Numbers, range 0 to 500. Format to 4 digits (e.g. pad with zeros). PIN code <code>0420</code> unlocks the vault and reveals the flag: <code>FLAG{INTRUDER_PIN_CRACKED}</code>.</p>
+        <p style="margin-top: 0.5rem;"><strong>Scenario 3:</strong> Valid usernames are <code>admin</code>, <code>guest</code>, <code>security</code>, <code>support</code>, and <code>maintenance</code>. In Intruder, valid usernames return a 46-byte error while invalid ones return 22 bytes.</p>
+      </div>
+    </div>
+
+    <!-- Flag Submission -->
+    <%- include('partials/flag_submission', { lab: 'intruder' }) %>
+  </div>
+
+  <!-- Right YouTube Guide -->
+  <%- include('partials/youtube_drawer', { notes: notes }) %>
+
+</div>
+
+<!-- Client scripts for sending AJAX payloads -->
+<script>
+  async function runGuessSubmit(event) {
+    event.preventDefault();
+    const val = document.getElementById('guessInput').value;
+    const resDiv = document.getElementById('guessResult');
+    resDiv.style.color = 'var(--text-main)';
+    resDiv.textContent = "Checking...";
+
+    try {
+      const res = await fetch('/intruder/guess', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guess: val })
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        resDiv.style.color = 'var(--accent-green)';
+        resDiv.innerHTML = `✓ ${data.message} <br><strong>Flag: ${data.flag}</strong>`;
+      } else {
+        resDiv.style.color = 'var(--accent-red)';
+        resDiv.textContent = `✗ ${data.message}`;
+      }
+    } catch(e) {
+      resDiv.textContent = "Connection error.";
+    }
+  }
+
+  async function runPinSubmit(event) {
+    event.preventDefault();
+    const val = document.getElementById('pinInput').value;
+    const resDiv = document.getElementById('pinResult');
+    resDiv.style.color = 'var(--text-main)';
+    resDiv.textContent = "Submitting PIN...";
+
+    try {
+      const res = await fetch('/intruder/pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: val })
+      });
+      const data = await res.json();
+      if (res.status === 200) {
+        resDiv.style.color = 'var(--accent-green)';
+        resDiv.innerHTML = `✓ ${data.message} <br><strong>Flag: ${data.flag}</strong>`;
+      } else {
+        resDiv.style.color = 'var(--accent-red)';
+        resDiv.textContent = `✗ [Status ${res.status}] ${data.message}`;
+      }
+    } catch(e) {
+      resDiv.style.color = 'var(--accent-red)';
+      resDiv.textContent = "✗ Access Denied. (Server connection error)";
+    }
+  }
+
+  async function runLoginSubmit(event) {
+    event.preventDefault();
+    const u = document.getElementById('loginUsername').value;
+    const p = document.getElementById('loginPassword').value;
+    const resDiv = document.getElementById('loginResult');
+    resDiv.style.display = 'block';
+    resDiv.style.color = 'var(--text-main)';
+    resDiv.textContent = "Querying credentials...";
+
+    try {
+      const res = await fetch('/intruder/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}`
+      });
+      const text = await res.text();
+      resDiv.textContent = `Server Status: ${res.status}\nResponse Length: ${text.length} bytes\nBody: ${text}`;
+      if (res.status === 200) {
+        resDiv.style.color = 'var(--accent-green)';
+      } else {
+        resDiv.style.color = 'var(--accent-amber)';
+      }
+    } catch(e) {
+      resDiv.textContent = "Query failed.";
+    }
+  }
+</script>
+
+<%- include('partials/footer') %>

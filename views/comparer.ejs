@@ -1,0 +1,175 @@
+<%- include('partials/header') %>
+
+<% 
+  const notes = {
+    objective: "Compare the JSON responses of a User Token and an Admin Token inside Burp Comparer to spot privilege variances and extract the hidden administrator flag.",
+    workflow: [
+      "Click the 'Generate JWT Tokens' button on this page to generate a Guest and Admin JWT.",
+      "Copy the Guest JWT token string.",
+      "Paste the Guest JWT token into the 'Token Sandbox Tester' and click 'Test Authorization'. Copy the raw JSON response shown in the console.",
+      "Go to Burp Suite. Open the Comparer tab.",
+      "Paste the copied Guest response JSON into the Comparer panel (or send the HTTP history responses to Comparer directly).",
+      "Repeat the process for the Admin JWT token. Copy the raw JSON response from the test console and paste it as a second pane in Burp Comparer.",
+      "In Burp Comparer, select both items and click 'Compare words' or 'Compare bytes'.",
+      "Look at the highlighted differences: notice how the admin permissions, timestamps, and environment fields differ, revealing the secret flag: FLAG{JWT_COMPARER_SUCCESS}."
+    ],
+    whatToSay: [
+      "Welcome to the Comparer Lab. Burp Comparer is a simple but extremely useful utility that diffs strings, files, or raw HTTP packets.",
+      "When auditing APIs, it is very common to have two accounts: a low-privileged user and a high-privileged admin.",
+      "By sending their API responses to Comparer, we can quickly diff hundreds of lines of JSON or HTML, highlighting the exact lines where access control gates are defined.",
+      "Here, we generate JWT keys for both guest and admin, request their dashboards, and diff the JSON structures. This immediately points us to the admin flag!"
+    ],
+    mistakes: [
+      "Trying to diff the JWT signatures manually. JWT signatures are base64 hashes that are always different, which adds noise. Focus on diffing the *API response body* instead!",
+      "Comparing by bytes when words comparison is much easier to read for structural JSON data.",
+      "Forgetting that Burp Comparer can take inputs from copy-paste OR direct history selections."
+    ],
+    concepts: [
+      "Side-by-side Diff Analysis",
+      "Access Control Auditing",
+      "JWT Structure Identification",
+      "API Response Divergence"
+    ]
+  };
+%>
+
+<div class="lab-layout">
+  
+  <!-- Left Workspace -->
+  <div class="lab-workspace">
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <h2 style="font-size: 1.5rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">Lab 6: Compare Responses</h2>
+      <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1rem;">
+        Discover how to use Burp Comparer to run rapid, visual diff checks on web requests or API payload changes.
+      </p>
+
+      <div class="alert-box alert-info">
+        <strong>Mission:</strong> Click the button below to generate a low-privilege User token and a high-privilege Admin token. Execute both tokens in the tester sandbox, and compare their JSON outputs inside Burp Comparer to find the flag.
+      </div>
+
+      <!-- Token Generator Panel -->
+      <div class="card" style="background: var(--bg-darker); margin-bottom: 1.5rem;">
+        <h3 style="font-size: 1.1rem; color: var(--accent-cyan); margin-bottom: 1rem;">
+          🔑 JWT Token Generator
+        </h3>
+        <button class="btn btn-primary" onclick="generateTokens()" style="margin-bottom: 1rem;">
+          Generate JWT Tokens
+        </button>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; flex-wrap: wrap;">
+          <div>
+            <label class="form-label" style="color: var(--accent-purple);">Low-Privilege Guest JWT</label>
+            <textarea id="userTokenText" class="form-textarea" readonly placeholder="Click Generate..." style="font-family: monospace; font-size: 0.8rem; height: 80px;"></textarea>
+          </div>
+          <div>
+            <label class="form-label" style="color: var(--accent-amber);">High-Privilege Admin JWT</label>
+            <textarea id="adminTokenText" class="form-textarea" readonly placeholder="Click Generate..." style="font-family: monospace; font-size: 0.8rem; height: 80px;"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sandbox Testers -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+        
+        <!-- Tester 1: User -->
+        <div class="card" style="background: var(--bg-darker);">
+          <h4 style="font-size: 1rem; color: var(--accent-purple); margin-bottom: 0.5rem;">User Sandbox Console</h4>
+          <div class="form-group">
+            <input type="text" id="userSandboxToken" class="form-input" placeholder="Paste User JWT here..." style="font-family: monospace; font-size: 0.8rem;">
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="testToken('user')">Test User Token</button>
+          
+          <div class="http-inspector" style="margin-top: 1rem;">
+            <div class="inspector-title">User JSON Response Output:</div>
+            <pre id="userConsoleOut" style="padding: 0.75rem; font-size: 0.75rem; color: var(--text-muted); max-height: 150px; overflow-y: auto;">Console empty.</pre>
+          </div>
+        </div>
+
+        <!-- Tester 2: Admin -->
+        <div class="card" style="background: var(--bg-darker);">
+          <h4 style="font-size: 1rem; color: var(--accent-amber); margin-bottom: 0.5rem;">Admin Sandbox Console</h4>
+          <div class="form-group">
+            <input type="text" id="adminSandboxToken" class="form-input" placeholder="Paste Admin JWT here..." style="font-family: monospace; font-size: 0.8rem;">
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="testToken('admin')">Test Admin Token</button>
+          
+          <div class="http-inspector" style="margin-top: 1rem;">
+            <div class="inspector-title">Admin JSON Response Output:</div>
+            <pre id="adminConsoleOut" style="padding: 0.75rem; font-size: 0.75rem; color: var(--text-muted); max-height: 150px; overflow-y: auto;">Console empty.</pre>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Hints Section -->
+    <div class="hint-accordion">
+      <button class="hint-trigger">
+        <span>💡 Need a hint?</span>
+        <span class="hint-icon">▼</span>
+      </button>
+      <div class="hint-content">
+        <p>1. Press <strong>Generate JWT Tokens</strong>. Copy the User JWT token and paste it into the User Sandbox input, then click <strong>Test User Token</strong>. Copy the entire JSON response.</p>
+        <p style="margin-top: 0.5rem;">2. Paste this text into one panel of Burp's <strong>Comparer</strong> tab.</p>
+        <p style="margin-top: 0.5rem;">3. Repeat the exact process for the Admin JWT token and the Admin Sandbox. Paste its response into the second Comparer panel.</p>
+        <p style="margin-top: 0.5rem;">4. Click <strong>Compare words</strong>. You will easily spot the differences in the permissions lists, the node details, and see the flag <code>FLAG{JWT_COMPARER_SUCCESS}</code>.</p>
+      </div>
+    </div>
+
+    <!-- Flag Submission -->
+    <%- include('partials/flag_submission', { lab: 'comparer' }) %>
+  </div>
+
+  <!-- Right YouTube Guide -->
+  <%- include('partials/youtube_drawer', { notes: notes }) %>
+
+</div>
+
+<!-- AJAX functions -->
+<script>
+  async function generateTokens() {
+    try {
+      const res = await fetch('/comparer/tokens');
+      const data = await res.json();
+      document.getElementById('userTokenText').value = data.userToken;
+      document.getElementById('adminTokenText').value = data.adminToken;
+      
+      // Auto fill inputs for ease of use
+      document.getElementById('userSandboxToken').value = data.userToken;
+      document.getElementById('adminSandboxToken').value = data.adminToken;
+    } catch(e) {
+      alert("Failed to generate tokens.");
+    }
+  }
+
+  async function testToken(type) {
+    const inputId = type === 'user' ? 'userSandboxToken' : 'adminSandboxToken';
+    const consoleId = type === 'user' ? 'userConsoleOut' : 'adminConsoleOut';
+    
+    const token = document.getElementById(inputId).value.trim();
+    const consoleEl = document.getElementById(consoleId);
+    consoleEl.textContent = "Querying API endpoint...";
+
+    if (!token) {
+      consoleEl.textContent = "Error: Please paste a token.";
+      return;
+    }
+
+    try {
+      const res = await fetch('/comparer/check-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      consoleEl.textContent = JSON.stringify(data, null, 2);
+    } catch(e) {
+      consoleEl.textContent = "Network Error.";
+    }
+  }
+</script>
+
+<%- include('partials/footer') %>

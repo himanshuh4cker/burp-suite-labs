@@ -1,0 +1,22 @@
+{
+  "name": "burp-suite-training-labs",
+  "version": "1.0.0",
+  "description": "Vulnerable training environment for teaching Burp Suite Community Edition.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "burp-suite",
+    "cybersecurity",
+    "training-lab",
+    "security"
+  ],
+  "author": "Antigravity",
+  "license": "ISC",
+  "dependencies": {
+    "ejs": "^3.1.10",
+    "express": "^4.21.2"
+  }
+}

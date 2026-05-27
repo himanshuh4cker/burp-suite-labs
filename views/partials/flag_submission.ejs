@@ -1,0 +1,66 @@
+<div class="card flag-card" style="margin-top: 2rem;">
+  <h3 style="font-size: 1.1rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+    <span>🏁</span> Validate Lab Completion
+  </h3>
+  
+  <div id="flagAlert_<%= lab %>" class="alert-box" style="display: none;"></div>
+
+  <% if (progress[lab]) { %>
+    <div class="alert-box alert-success" style="display: block; margin-bottom: 0;">
+      <strong>✓ Lab Solved!</strong> You have successfully completed this challenge.
+    </div>
+  <% } else { %>
+    <form id="flagForm_<%= lab %>" onsubmit="submitLabFlag(event, '<%= lab %>')" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+      <div style="flex: 1; min-width: 250px;">
+        <input 
+          type="text" 
+          id="flagInput_<%= lab %>" 
+          class="form-input" 
+          placeholder="Enter flag (e.g. FLAG{...})" 
+          required
+          style="font-family: 'JetBrains Mono', monospace;"
+        >
+      </div>
+      <button type="submit" class="btn btn-primary">
+        Submit Flag
+      </button>
+    </form>
+  <% } %>
+</div>
+
+<script>
+  async function submitLabFlag(event, labName) {
+    event.preventDefault();
+    const flagVal = document.getElementById('flagInput_' + labName).value.trim();
+    const alertBox = document.getElementById('flagAlert_' + labName);
+    const form = document.getElementById('flagForm_' + labName);
+
+    try {
+      const res = await fetch('/api/submit-flag', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lab: labName, flag: flagVal })
+      });
+      const data = await res.json();
+
+      alertBox.style.display = 'block';
+      if (data.success) {
+        alertBox.className = 'alert-box alert-success';
+        alertBox.innerHTML = `<strong>Success!</strong> ${data.message}`;
+        if (form) form.style.display = 'none';
+        
+        // Refresh the page after 1.5 seconds to show the solved state and update progress
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      } else {
+        alertBox.className = 'alert-box alert-warning';
+        alertBox.innerHTML = `<strong>Error:</strong> ${data.message}`;
+      }
+    } catch (err) {
+      alertBox.style.display = 'block';
+      alertBox.className = 'alert-box alert-warning';
+      alertBox.innerHTML = `<strong>System Error:</strong> Could not connect to validation backend.`;
+    }
+  }
+</script>

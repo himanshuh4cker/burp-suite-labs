@@ -1,0 +1,125 @@
+<%- include('partials/header') %>
+
+<% 
+  const notes = {
+    objective: "Explore the site map of the application using Burp Target to discover hidden directories, mock backup files, and backend debug API endpoints.",
+    workflow: [
+      "Open Burp Suite. Go to the Target > Site map tab.",
+      "In Burp's browser, browse the visible links in the web application (Home, About Us, Contact, FAQ) to populate the site map.",
+      "Check the Site map tree. You will notice a robots.txt request or disallowed entries.",
+      "Analyze the site map nodes. Look at the files loaded: you will see /js/analytics.js.",
+      "Select analytics.js and inspect the Response tab. Read the comments containing developer notes about /backup.zip and /debug-api-v2.",
+      "Request /backup.zip to download the source code zip. Inspect the downloaded zip text to find references.",
+      "Submit a GET request to /debug-api-v2 directly in your browser.",
+      "The response will return JSON containing the flag: FLAG{DEVELOPER_BACKDOOR_FOUND}."
+    ],
+    whatToSay: [
+      "Welcome to the Target Lab. Burp Target compiles a comprehensive structural map of the application (the Site map).",
+      "As you click links, Burp passively reads the HTML responses, extracts references, logs static folders, and discovers referenced files like scripts.",
+      "Notice how robots.txt restricts search engines, but for a hacker, it acts as a directory checklist!",
+      "Let's look at the source files. Comments in JavaScript code are a goldmine for credentials, endpoints, and developer notes.",
+      "Here, analyzing the JS files reveals /backup.zip and /debug-api-v2. Requesting the backdoor API gives us our flag!"
+    ],
+    mistakes: [
+      "Scanning or spidering targets in real life without permission. (Always stay in scope!)",
+      "Forgetting to look inside JS or CSS files in Burp. Parsed JS comments often contain credentials, API keys, or hidden staging links.",
+      "Not checking robots.txt manually, which is a fast win."
+    ],
+    concepts: [
+      "Passive Site Mapping",
+      "Robots.txt Analysis",
+      "JS Code Comments Leakage",
+      "Backdoor Endpoint Discovery"
+    ]
+  };
+%>
+
+<div class="lab-layout">
+  
+  <!-- Left Workspace -->
+  <div class="lab-workspace">
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <h2 style="font-size: 1.5rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">Lab 2: Explore the Website</h2>
+      <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1rem;">
+        Understand how Burp Suite automatically maps the structure of a web application as you browse its pages.
+      </p>
+
+      <div class="alert-box alert-info">
+        <strong>Mission:</strong> Map the website and locate the hidden developer backdoor. Submit the flag found inside the debug API endpoint.
+      </div>
+
+      <!-- Mock Public Website Interface -->
+      <div class="card" style="background: var(--bg-darker); margin-top: 1.5rem;">
+        <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem; margin-bottom: 1rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+          <h3 style="font-size: 1.1rem; color: var(--accent-purple); display: flex; align-items: center; gap: 0.5rem; flex: 1;">
+            🌐 Corporate Portal v1.0
+          </h3>
+          <div style="display: flex; gap: 0.5rem;">
+            <a href="/target?page=home" class="btn btn-secondary btn-sm">Home</a>
+            <a href="/target?page=about" class="btn btn-secondary btn-sm">About Us</a>
+            <a href="/target?page=contact" class="btn btn-secondary btn-sm">Contact</a>
+            <a href="/target?page=faq" class="btn btn-secondary btn-sm">FAQ</a>
+          </div>
+        </div>
+
+        <!-- Render Dynamic Mock Page Contents -->
+        <div style="padding: 1rem; min-height: 150px;">
+          <% 
+            const page = queryPage || 'home';
+            if (page === 'home') {
+          %>
+            <h4>Welcome to our corporate homepage</h4>
+            <p style="color: var(--text-muted); margin-top: 0.5rem; font-size: 0.9rem;">
+              We provide secure, distributed microservice clusters for enterprises. Browse our site nodes to learn more.
+            </p>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem; font-style: italic;">
+              Registered users can access the staff portal via the Proxy Lab card on the main dashboard.
+            </p>
+          <% } else if (page === 'about') { %>
+            <h4>About Our Platform</h4>
+            <p style="color: var(--text-muted); margin-top: 0.5rem; font-size: 0.9rem;">
+              Founded by security researchers, our architecture is built with privacy and integrity first.
+            </p>
+          <% } else if (page === 'contact') { %>
+            <h4>Contact Support</h4>
+            <p style="color: var(--text-muted); margin-top: 0.5rem; font-size: 0.9rem;">
+              Open a helpdesk ticket by emailing us at support@pentestbyhp.local.
+            </p>
+          <% } else if (page === 'faq') { %>
+            <h4>Frequently Asked Questions</h4>
+            <p style="color: var(--text-muted); margin-top: 0.5rem; font-size: 0.9rem;">
+              <strong>Q: How do I debug API services?</strong><br>
+              A: Standard debugging routes are disabled in production clusters for security.
+            </p>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hints Section -->
+    <div class="hint-accordion">
+      <button class="hint-trigger">
+        <span>💡 Need a hint?</span>
+        <span class="hint-icon">▼</span>
+      </button>
+      <div class="hint-content">
+        <p>1. Check if the site serves a <code>/robots.txt</code> file. This often contains restricted paths.</p>
+        <p style="margin-top: 0.5rem;">2. Inspect the HTML source code of the page (or look in Burp's Sitemap) for JavaScript files like <code>/js/analytics.js</code>.</p>
+        <p style="margin-top: 0.5rem;">3. Inside the Javascript source code, you'll find a comment detailing <code>/backup.zip</code> and a backend route <code>/debug-api-v2</code>.</p>
+        <p style="margin-top: 0.5rem;">4. Visit <code>/debug-api-v2</code> directly in your browser to view the JSON output containing the flag.</p>
+      </div>
+    </div>
+
+    <!-- Flag Submission -->
+    <%- include('partials/flag_submission', { lab: 'target' }) %>
+  </div>
+
+  <!-- Right YouTube Guide -->
+  <%- include('partials/youtube_drawer', { notes: notes }) %>
+
+</div>
+
+<!-- Reference the analytics script to allow Burp Suite to spider it -->
+<script src="/js/analytics.js"></script>
+
+<%- include('partials/footer') %>

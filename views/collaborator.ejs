@@ -1,0 +1,187 @@
+<%- include('partials/header') %>
+
+<% 
+  const notes = {
+    objective: "Understand Out-of-Band Application Security Testing (OAST) and simulate a blind Server-Side Request Forgery (SSRF) callback checking loop in Burp Suite.",
+    workflow: [
+      "Open Burp Suite. In Professional/Enterprise editions, you would open Burp Collaborator client and click 'Copy to clipboard'. Here, we simulate the interaction address.",
+      "In the 'SSRF Payload Generator' field, input a collaborator domain (e.g., your-unique-id.oastify.com or localhost).",
+      "Click the 'Test SSRF Vulnerability' button to trigger the payload.",
+      "Observe the 'OAST Callback Timeline' animate on this page. It demonstrates exactly how a blind SSRF exploit connects out-of-band:",
+      "  - Step 1: Server parses the XML/JSON payload.",
+      "  - Step 2: Server attempts to resolve the domain address, sending a DNS query.",
+      "  - Step 3: The DNS request hits the Collaborator Name Server, triggering a log.",
+      "  - Step 4: The server initiates a background HTTP request to fetch the URL.",
+      "  - Step 5: The HTTP request hits the Collaborator IP address, triggering an HTTP log.",
+      "  - Step 6: The callback reports the successful validation, revealing the flag: FLAG{OUT_OF_BAND_SIMULATION}."
+    ],
+    whatToSay: [
+      "Welcome to the Collaborator Theory Lab! Traditional vulnerabilities are in-band: you send an exploit, and the response tells you if it worked.",
+      "But what if the response is completely blank? What if it is a blind vulnerability like blind SQLi, blind XXE, or blind SSRF?",
+      "To test these, we use Out-of-Band Application Security Testing (OAST). We instruct the server to connect back to a server we control (Burp Collaborator).",
+      "When the server does a lookup or fetches a page, we see the DNS or HTTP logs hit our Collaborator terminal.",
+      "This simulation shows you step-by-step exactly how this sequence triggers a callback, verifying the blind flaw safely on localhost!"
+    ],
+    mistakes: [
+      "Expecting Burp Suite Community Edition to have the native 'Burp Collaborator client' tab. (It is a Professional-only feature!). This visual lab helps Community users master the concept without the upgrade!",
+      "Confusing standard SSRF (where you see the page contents returned) with blind SSRF (where you only verify it via out-of-band network pings)."
+    ],
+    concepts: [
+      "Out-of-Band Application Security Testing (OAST)",
+      "Server-Side Request Forgery (SSRF)",
+      "DNS Resolution Log Checks",
+      "Blind Vulnerabilities Validation"
+    ]
+  };
+%>
+
+<div class="lab-layout">
+  
+  <!-- Left Workspace -->
+  <div class="lab-workspace">
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <h2 style="font-size: 1.5rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">Lab 12: Out-of-Band Attacks</h2>
+      <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1rem;">
+        Understand how Burp Collaborator registers DNS lookup alerts and HTTP callbacks to verify blind vulnerabilities.
+      </p>
+
+      <div class="alert-box alert-warning">
+        <strong>Theory Simulation:</strong> Burp Collaborator is a Professional Edition feature. This lab provides a visual simulation of a blind SSRF callback loop, making it safe and easy to teach on localhost.
+      </div>
+
+      <!-- SSRF Console form -->
+      <div class="card" style="background: var(--bg-darker); margin-top: 1.5rem;">
+        <h3 style="font-size: 1.1rem; color: var(--accent-cyan); border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1rem;">
+          🎯 SSRF Payload Generator
+        </h3>
+        
+        <div class="form-group">
+          <label class="form-label" for="collabDomain">Collaborator Address payload</label>
+          <input type="text" id="collabDomain" class="form-input" placeholder="e.g. unique-id.oastify.com" value="test-collaborator.oastify.com" required style="font-family: monospace;">
+        </div>
+        <button class="btn btn-primary" onclick="simulateOAST()">
+          Test SSRF Vulnerability
+        </button>
+      </div>
+
+      <!-- Live Callback Timeline -->
+      <div class="ssrf-visualizer" id="ssrfVisualizer" style="display: none; margin-top: 1.5rem;">
+        <h3 style="font-size: 1.1rem; color: var(--accent-purple); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+          🛰️ Out-of-Band (OAST) Callback Timeline
+        </h3>
+
+        <div class="visualizer-timeline" id="timelineList">
+          <!-- Timelines steps injected here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Hints Section -->
+    <div class="hint-accordion">
+      <button class="hint-trigger">
+        <span>💡 Need a hint?</span>
+        <span class="hint-icon">▼</span>
+      </button>
+      <div class="hint-content">
+        <p>1. Enter a domain name in the input box and click **Test SSRF Vulnerability**.</p>
+        <p style="margin-top: 0.5rem;">2. Wait for the step-by-step visual animation to finish.</p>
+        <p style="margin-top: 0.5rem;">3. The final step shows the Collaborator callback success logs and displays the flag: <code>FLAG{OUT_OF_BAND_SIMULATION}</code>.</p>
+      </div>
+    </div>
+
+    <!-- Flag Submission -->
+    <%- include('partials/flag_submission', { lab: 'collaborator' }) %>
+  </div>
+
+  <!-- Right YouTube Guide -->
+  <%- include('partials/youtube_drawer', { notes: notes }) %>
+
+</div>
+
+<!-- OAST timeline simulation player scripts -->
+<script>
+  async function simulateOAST() {
+    const domain = document.getElementById('collabDomain').value.trim();
+    if (!domain) {
+      alert("Please specify a domain address.");
+      return;
+    }
+
+    const visualizer = document.getElementById('ssrfVisualizer');
+    const timeline = document.getElementById('timelineList');
+    
+    // Clear and display
+    timeline.innerHTML = '';
+    visualizer.style.display = 'block';
+
+    try {
+      const res = await fetch('/api/collaborator/trigger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain: domain })
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        // Play steps with a staggered time delay
+        let steps = data.steps;
+        for (let i = 0; i < steps.length; i++) {
+          await sleep(1000);
+          appendTimelineStep(i + 1, steps[i]);
+        }
+      }
+    } catch(e) {
+      alert("SSRF simulation failed.");
+    }
+  }
+
+  function appendTimelineStep(num, step) {
+    const timeline = document.getElementById('timelineList');
+    const stepEl = document.createElement('div');
+    
+    let typeClass = 'info';
+    let stepTitle = `Step ${num}: Process Payload`;
+    if (step.type === 'dns') {
+      typeClass = 'dns';
+      stepTitle = '🛰️ DNS Query Injected';
+    } else if (step.type === 'dns_ok') {
+      typeClass = 'dns';
+      stepTitle = '📡 DNS Callback Resolved';
+    } else if (step.type === 'http') {
+      typeClass = 'http';
+      stepTitle = '🛜 HTTP Connection Initiated';
+    } else if (step.type === 'http_ok') {
+      typeClass = 'http';
+      stepTitle = '🚀 HTTP Callback Received';
+    } else if (step.type === 'flag') {
+      typeClass = 'success';
+      stepTitle = '🏁 Flag Released';
+    }
+
+    stepEl.className = `timeline-step ${typeClass}`;
+    stepEl.innerHTML = `
+      <div class="timeline-bullet"></div>
+      <div class="timeline-content">
+        <div class="timeline-title">${stepTitle}</div>
+        <div class="timeline-desc">${step.msg}</div>
+      </div>
+    `;
+    
+    timeline.appendChild(stepEl);
+    
+    // Force reflow and set active class for transition fade-in
+    setTimeout(() => {
+      stepEl.classList.add('active');
+    }, 50);
+
+    // Scroll to bottom
+    const visualizer = document.getElementById('ssrfVisualizer');
+    visualizer.scrollTop = visualizer.scrollHeight;
+  }
+
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+</script>
+
+<%- include('partials/footer') %>

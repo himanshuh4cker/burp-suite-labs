@@ -1,0 +1,125 @@
+<%- include('partials/header') %>
+
+<% 
+  const notes = {
+    objective: "Tamper with the product 'id' parameter in Burp Repeater to request a hidden administrative item and extract a secret system flag.",
+    workflow: [
+      "Open Burp Suite and navigate to Proxy > HTTP history.",
+      "Click one of the product links on this page (e.g., Alpha-X Laptop with id=1).",
+      "Find the GET request to /product?id=1 in Burp's HTTP history.",
+      "Right-click the request and select 'Send to Repeater' (or press Ctrl+R).",
+      "Go to the Repeater tab in Burp. Select the request node.",
+      "In the request window, change '?id=1' to '?id=1337' in the GET path header.",
+      "Click 'Send' in the top left corner of the Repeater tab.",
+      "Examine the Response pane. Scroll through the HTML response body.",
+      "Locate the product description section to extract the flag: FLAG{REPEATER_TAMPERING_SUCCESS}."
+    ],
+    whatToSay: [
+      "Welcome to the Repeater Lab! Burp Repeater is an essential tool for manual vulnerability testing.",
+      "It allows you to modify a single request and send it repeatedly without having to re-submit forms or click links in the browser.",
+      "This is perfect for fuzzing input parameters, analyzing different error messages, and testing authorization bypasses (IDOR).",
+      "On this store page, products are fetched by ID. The front-end only links to products 1, 2, and 3.",
+      "By sending the request to Repeater and changing the ID to 1337, we query a hidden administrative mainframe product and bypass the client-side UI limitations!"
+    ],
+    mistakes: [
+      "Using the browser's URL bar directly and missing how HTTP headers operate inside Repeater.",
+      "Not inspecting the raw Response body in Repeater and expecting the browser to auto-render changes.",
+      "Editing headers incorrectly, causing the server to throw 400 Bad Request syntax errors."
+    ],
+    concepts: [
+      "Burp Repeater Workflow",
+      "Parameter Tampering",
+      "Insecure Direct Object References (IDOR)",
+      "Bypassing Client-side Restrictions"
+    ]
+  };
+%>
+
+<div class="lab-layout">
+  
+  <!-- Left Workspace -->
+  <div class="lab-workspace">
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <h2 style="font-size: 1.5rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">Lab 4: Modify and Replay</h2>
+      <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1rem;">
+        Learn how to capture a request, send it to Burp Repeater, and manually manipulate parameters to discover hidden server resources.
+      </p>
+
+      <div class="alert-box alert-info">
+        <strong>Mission:</strong> Load a standard product below. Send that request to Burp Repeater, tamper with the product ID to fetch item <code>1337</code>, and find the flag.
+      </div>
+
+      <!-- Store Links -->
+      <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin: 1.5rem 0;">
+        <a href="/product?id=1" class="btn btn-secondary btn-sm">📦 View Laptop (ID: 1)</a>
+        <a href="/product?id=2" class="btn btn-secondary btn-sm">📦 View Phone (ID: 2)</a>
+        <a href="/product?id=3" class="btn btn-secondary btn-sm">📦 View Earbuds (ID: 3)</a>
+      </div>
+
+      <!-- Display Selected Product Details -->
+      <% if (error) { %>
+        <div class="alert-box alert-warning">
+          <strong>Error:</strong> <%= error %>
+        </div>
+      <% } else if (product) { %>
+        <div class="card" style="background: var(--bg-darker); border-color: <%= product.id === 1337 ? 'var(--accent-purple)' : 'var(--border-color)' %>;">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1rem;">
+            <h3 style="color: var(--accent-cyan); font-size: 1.3rem;">
+              <%= product.name %>
+            </h3>
+            <span style="font-size: 1.25rem; font-weight: 700; color: var(--accent-green);">
+              $<%= product.price %>
+            </span>
+          </div>
+
+          <div style="margin-bottom: 1rem;">
+            <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: bold; display: block; margin-bottom: 0.25rem;">
+              Product Specifications:
+            </span>
+            <p style="font-size: 0.95rem; line-height: 1.5;">
+              <%= product.description %>
+            </p>
+          </div>
+
+          <% if (product.secret_note) { %>
+            <div style="background: rgba(139, 92, 246, 0.08); border: 1px dashed var(--accent-purple); padding: 0.75rem; border-radius: 6px; font-size: 0.85rem; margin-top: 1rem;">
+              <span style="color: var(--accent-purple); font-weight: bold; display: block; margin-bottom: 0.25rem;">🔒 Internal Secret Note:</span>
+              <code><%= product.secret_note %></code>
+            </div>
+          <% } %>
+
+          <div style="margin-top: 1.5rem; text-align: right;">
+            <span style="font-size: 0.75rem; color: var(--text-dark); font-family: monospace;">Database Query Node: products_table.row_id = <%= product.id %></span>
+          </div>
+        </div>
+      <% } else { %>
+        <div style="padding: 3rem; text-align: center; border: 1px dashed var(--border-color); border-radius: 8px; color: var(--text-muted);">
+          Select one of the catalog items above to query the database.
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Hints Section -->
+    <div class="hint-accordion">
+      <button class="hint-trigger">
+        <span>💡 Need a hint?</span>
+        <span class="hint-icon">▼</span>
+      </button>
+      <div class="hint-content">
+        <p>1. Open Burp Suite, select <strong>Proxy > HTTP history</strong>, and click any of the product buttons above.</p>
+        <p style="margin-top: 0.5rem;">2. Find the request showing <code>GET /product?id=1</code>, right-click it, and select <strong>Send to Repeater</strong>.</p>
+        <p style="margin-top: 0.5rem;">3. Go to the <strong>Repeater</strong> tab. In the request editor change <code>?id=1</code> to <code>?id=1337</code>.</p>
+        <p style="margin-top: 0.5rem;">4. Click <strong>Send</strong>. The server response on the right pane will render the Flag: <code>FLAG{REPEATER_TAMPERING_SUCCESS}</code>.</p>
+      </div>
+    </div>
+
+    <!-- Flag Submission -->
+    <%- include('partials/flag_submission', { lab: 'repeater' }) %>
+  </div>
+
+  <!-- Right YouTube Guide -->
+  <%- include('partials/youtube_drawer', { notes: notes }) %>
+
+</div>
+
+<%- include('partials/footer') %>
