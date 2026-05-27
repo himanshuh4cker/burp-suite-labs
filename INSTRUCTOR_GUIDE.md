@@ -36,12 +36,6 @@ Intercept a login request and modify its body parameters, cookies, or HTTP heade
 6. Click **Forward** in Burp.
 7. Return to your browser to view the success flag.
 
-### 🗣️ YouTube Script (What to Say)
-> *"Alright guys, welcome to Lab 1. We are looking at Burp Proxy. Think of the Proxy as a security guard standing in the middle of the road. It stops the HTTP request in mid-air, allowing us to inspect it and change the values before the server ever gets to read them. By changing our credentials or injecting a custom bypass header directly in the raw request, we easily bypass client-side limitations!"*
-
-### ⚠️ Common Student Pitfalls
-* Forgetting to turn **Intercept OFF** after completing the lab, causing subsequent browser tabs to hang indefinitely.
-* Adding the custom header line with a typo, or leaving a blank line in the middle of the headers, which breaks HTTP syntax.
 
 ### 💡 Concepts Taught
 * Request-Response Lifecycle
@@ -66,12 +60,6 @@ Use Burp Target to passively map the website's directories, discover backup arch
 6. Visit `http://localhost:3000/debug-api-v2` in your browser.
 7. Copy the flag from the JSON response.
 
-### 🗣️ YouTube Script (What to Say)
-> *"In this challenge, we explore how Burp maps the target site. As we browse, Burp passively parses the HTML, finds scripts, and checks standard paths like robots.txt. Look at this javascript file: developers often leave comments referencing testing backups or backend APIs. By analyzing these scripts in Burp's Sitemap, we discover an undocumented debug API containing the flag!"*
-
-### ⚠️ Common Student Pitfalls
-* Manually guessing directories instead of using the Site map to see the nested structure.
-* Forgetting to check the **Response** tab in Burp when clicking on script nodes in the Site map.
 
 ### 💡 Concepts Taught
 * Active/Passive mapping
@@ -97,12 +85,6 @@ Analyze background API queries (Fetch/XHR) inside Burp HTTP History to view back
 7. Click on this row, go to the **Response** tab, and read the JSON response body.
 8. Copy the flag.
 
-### 🗣️ YouTube Script (What to Say)
-> *"Modern websites use AJAX to talk to backend servers without refreshing the page. In this lab, we inspect background calls. When we search or edit our bio, the browser pings API routes. Regular users won't see this, but Burp logs every request. Let's select the bio update request and look at the response: the server responds with a JSON object containing our flag!"*
-
-### ⚠️ Common Student Pitfalls
-* Applying filter rules in Burp History that inadvertently hide JSON/API endpoints.
-* Looking only at the request payload instead of checking the response body.
 
 ### 💡 Concepts Taught
 * AJAX and XHR tracing
@@ -127,12 +109,6 @@ Manipulate parameters and test for Insecure Direct Object References (IDOR) by s
 6. Click the **Send** button.
 7. In the Response pane, inspect the HTML code to find the system flag.
 
-### 🗣️ YouTube Script (What to Say)
-> *"If you want to edit and replay requests manually, Burp Repeater is your best friend. Instead of going back to the browser, clicking links, and re-proxying, we send the request to Repeater. Now we can manipulate variables infinitely. We'll change the product ID to 1337—a hidden record—and re-send it. The server processes our request and leaks the flag!"*
-
-### ⚠️ Common Student Pitfalls
-* Modifying headers incorrectly (e.g. omitting the space after headers), which causes 400 Bad Request responses.
-* Forgetting to inspect the response body in the Repeater tab.
 
 ### 💡 Concepts Taught
 * Burp Repeater flow
@@ -166,12 +142,6 @@ Execute automated sniper attacks in Burp Intruder to brute-force a guessing game
   3. Set Payload type to *Simple List* and enter: `admin, guest, security, test, support`.
   4. Run attack. Sort by length. Existing usernames return a different length response than non-existent accounts.
 
-### 🗣️ YouTube Script (What to Say)
-> *"Burp Intruder allows us to fuzz inputs automatically. We identify input variables, place markers around them, and load wordlists. In the PIN cracking challenge, we generate numbers from 0000 to 0500. Look at the attack results: all queries return a 403 Forbidden status, except one! That is our correct PIN, and the response body contains the flag."*
-
-### ⚠️ Common Student Pitfalls
-* Forgetting to clear the automatic markers Burp places on headers, which corrupts the fuzzing target.
-* Forgetting to pad the PIN generator with leading zeros, causing Intruder to send `74` instead of `0074`.
 
 ### 💡 Concepts Taught
 * Intruder Sniper configurations
@@ -198,12 +168,6 @@ Use Burp Comparer to perform a word/byte diff analysis between two API responses
 8. Highlight both items in Comparer and click **Compare words**.
 9. Analyze the highlighted structural differences to find the administrator flag.
 
-### 🗣️ YouTube Script (What to Say)
-> *"When testing permissions, we often compare what a low-privilege user sees versus a high-privilege admin. Instead of staring at hundreds of lines of code, we paste both outputs into Burp Comparer. Comparing by words highlights the exact differences—such as roles, permissions lists, and the administrator flag."*
-
-### ⚠️ Common Student Pitfalls
-* Attempting to compare the encoded JWT tokens themselves. Focus on comparing the *API JSON response body* instead!
-* Selecting "Compare bytes" for JSON, which is harder to read than "Compare words".
 
 ### 💡 Concepts Taught
 * Privilege diffing
@@ -227,12 +191,6 @@ Utilize Burp Decoder to decode Base64, URL-encoding, Hex values, split JWT struc
 5. **JWT Payload**: Paste the JWT block. Copy only the middle section (between the two dots). Paste it into Decoder and decode as Base64 to reveal the flag: `FLAG{JWT_DECODED_SECRET}`.
 6. **MD5 Hash**: Decrypt the hash `21232f297a57a5a743894a0e4a801fc3` to reveal the word: `admin`.
 
-### 🗣️ YouTube Script (What to Say)
-> *"Burp Decoder is our quick-conversion translator. Browsers encode variables to send them over the wire safely. Here, we decode hex, url, and base64 strings easily. For JWTs, remember: they consist of three sections divided by dots. We copy the middle payload section and decode it as Base64 to reveal the flag!"*
-
-### ⚠️ Common Student Pitfalls
-* Attempting to decode the entire JWT string at once rather than splitting and decoding the payload section individually.
-* Expecting Decoder to decrypt MD5 hashes directly (Decoder only generates hashes; use an online database/tool to crack them).
 
 ### 💡 Concepts Taught
 * Encoding vs. Encryption
@@ -259,12 +217,6 @@ Test the cryptographic randomness of session cookies using Burp Sequencer to ide
 8. Let the analyzer collect at least 150-200 tokens. The predictability graph will show extremely low entropy.
 9. Locate the flag in the response body of the `/sequencer/generate` API call.
 
-### 🗣️ YouTube Script (What to Say)
-> *"If session cookies are predictable, an attacker can guess a active session ID and hijack accounts. Burp Sequencer runs mathematical tests on token collections to evaluate their randomness. Here, the server issues linear tokens: SESSION-1001, 1002, etc. Sequencer immediately detects this zero-entropy sequence, proving the session configuration is vulnerable."*
-
-### ⚠️ Common Student Pitfalls
-* Testing the HTTP response length instead of the cookie header string.
-* Terminating the live capture before it collects enough tokens to compute initial statistical trends.
 
 ### 💡 Concepts Taught
 * Cryptographic randomness (entropy)
@@ -293,11 +245,6 @@ Use Burp Organizer to save, document, categorize, and tag sensitive requests (e.
 7. Select the requests. Double-click the **Tags** or **Notes** columns to assign labels (e.g., 'Staging Creds', 'API Key Leaks') and write documentation notes.
 8. Read the configuration request response in Organizer to extract the flag.
 
-### 🗣️ YouTube Script (What to Say)
-> *"Organizer is your central notebook in Burp Suite. During a pentest, you'll find hundreds of endpoints. Keeping track of them in external text documents is messy. By sending important API requests to Organizer, you can rate them, tag them, and write notes. Let's look at the config query: we can document the API key and find our flag right here!"*
-
-### ⚠️ Common Student Pitfalls
-* Confusing Organizer with Repeater (Repeater active replays requests; Organizer serves as a static documentation notepad).
 
 ### 💡 Concepts Taught
 * Evidence collection and organization
@@ -322,12 +269,6 @@ Filter and search heavy telemetry noise streams inside Burp Logger to isolate a 
 6. Press enter. Double-click the isolated request row.
 7. Open the **Response** tab and copy the flag.
 
-### 🗣️ YouTube Script (What to Say)
-> *"Modern websites generate massive traffic noise through telemetry, ads, and health checks. Finding a specific request in HTTP History can feel like finding a needle in a haystack. That's where Burp Logger shines. Logger records all traffic and lets us search and filter. By searching for our debug API target, we filter out the noise instantly and retrieve our flag!"*
-
-### ⚠️ Common Student Pitfalls
-* Trying to scroll manually through the rapid telemetry logs instead of using the search filter.
-* Forgetting to click the 'Send Debug Report' button to generate the request before searching.
 
 ### 💡 Concepts Taught
 * Real-time traffic logging
@@ -353,11 +294,6 @@ Understand the mechanics of Out-of-Band Application Security Testing (OAST) and 
    * Observe the HTTP callback trigger.
 5. Copy the flag released at the final step of the callback visualization.
 
-### 🗣️ YouTube Script (What to Say)
-> *"If an application is vulnerable to blind SSRF or blind XXE, the server processes our input but doesn't return any response. To confirm the bug, we use Out-of-Band attacks (OAST). We tell the server to query a domain we control (Burp Collaborator). When the server makes a DNS or HTTP lookup, Collaborator logs it, verifying the vulnerability. This simulation shows you exactly how this back-and-forth callback works step-by-step!"*
-
-### ⚠️ Common Student Pitfalls
-* Expecting Burp Suite Community Edition to have the native 'Burp Collaborator client' tab (this is a Professional-only feature, which is why this visual simulation is so valuable for learning the theory!).
 
 ### 💡 Concepts Taught
 * Out-of-Band Application Security Testing (OAST)
