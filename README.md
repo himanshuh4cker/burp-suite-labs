@@ -57,7 +57,7 @@ Ensure you have Node.js (v20+) installed.
 By default, modern web browsers bypass proxies for `localhost` and local IP addresses. To intercept the traffic in Burp Suite, choose one of these two options:
 
 * **Option A (Recommended)**: Use the **embedded browser** inside Burp Suite (**Proxy** > **Intercept** > **Open Browser**). It intercepts local traffic automatically.
-* **Option B**: Add a custom host mapping in your hosts file (e.g., `/etc/hosts` on Linux or `C:\Windows\System32\drivers\etc\hosts` on Windows) mapping `127.0.0.1` to a domain like `hp.labs` and access `http://hp.labs:3000`.
+* **Option B**: Add a custom host mapping in your hosts file (e.g., `/etc/hosts` on Linux or `C:\Windows\System32\drivers\etc\hosts` on Windows) mapping `127.0.0.1` to a domain like `burp.lab` and access `http://burp.lab:3000`.
 
 ---
 
